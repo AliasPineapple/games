@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>汉字找一找 🔍</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(135deg, #FFF9E6 0%, #FFF0CC 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      user-select: none;
+    }
+
+    /* ===== 顶部状态栏 ===== */
+    #header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px 0;
+    }
+    #header .title { font-size: 20px; font-weight: 700; color: #E07B00; }
+    #header .level-badge {
+      background: #FF8C00; color: #fff;
+      border-radius: 20px; padding: 4px 14px;
+      font-size: 13px; font-weight: 600;
+    }
+
+    /* ===== 分数 & 计时 ===== */
+    #stats {
+      width: 100%; max-width: 480px;
+      display: flex; justify-content: space-around;
+      padding: 10px 16px;
+    }
+    .stat-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 8px 20px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      min-width: 90px;
+    }
+    .stat-label { font-size: 11px; color: #999; }
+    .stat-value { font-size: 22px; font-weight: 700; color: #E07B00; line-height: 1.2; }
+
+    /* ===== 题目区 ===== */
+    #question-area {
+      width: 100%; max-width: 480px;
+      text-align: center;
+      padding: 10px 16px;
+    }
+    #question-hint { font-size: 13px; color: #888; margin-bottom: 6px; }
+    #question-char {
+      font-size: 72px;
+      font-weight: 900;
+      color: #E07B00;
+      line-height: 1;
+      text-shadow: 3px 3px 0 rgba(224,123,0,0.15);
+      animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes popIn {
+      from { transform: scale(0.5); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    #question-pinyin { font-size: 16px; color: #aaa; letter-spacing: 2px; margin-top: 4px; }
+
+    /* ===== 进度条 ===== */
+    #progress-wrap {
+      width: 100%; max-width: 480px;
+      padding: 4px 16px 8px;
+    }
+    #progress-bar-bg {
+      background: #eee; border-radius: 10px; height: 8px; overflow: hidden;
+    }
+    #progress-bar {
+      height: 100%; background: linear-gradient(90deg, #FFB800, #FF8C00);
+      border-radius: 10px;
+      transition: width 1s linear;
+    }
+
+    /* ===== 字格网格 ===== */
+    #grid-wrap {
+      width: 100%; max-width: 480px;
+      padding: 0 12px;
+      flex: 1;
+    }
+    #grid {
+      display: grid;
+      gap: 6px;
+    }
+    .cell {
+      background: #fff;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      font-weight: 600;
+      color: #333;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      transition: transform 0.12s, background 0.15s, color 0.15s;
+      aspect-ratio: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    .cell:active { transform: scale(0.9); }
+    .cell.correct {
+      background: linear-gradient(135deg, #4CAF50, #66BB6A);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(76,175,80,0.4);
+      animation: correctBounce 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .cell.wrong {
+      background: linear-gradient(135deg, #F44336, #EF5350);
+      color: #fff;
+      animation: shake 0.3s;
+    }
+    .cell.found { background: #E8F5E9; color: #9E9E9E; pointer-events: none; }
+    @keyframes correctBounce {
+      from { transform: scale(0.8); } to { transform: scale(1); }
+    }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    /* ===== 底部按钮 ===== */
+    #bottom {
+      width: 100%; max-width: 480px;
+      padding: 10px 16px 20px;
+      display: flex; gap: 10px;
+    }
+    .btn {
+      flex: 1; padding: 13px 0;
+      border: none; border-radius: 14px;
+      font-size: 15px; font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.1s;
+    }
+    .btn:active { transform: scale(0.96); opacity: 0.9; }
+    #btn-skip { background: #fff; color: #E07B00; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    #btn-next { background: linear-gradient(135deg, #FFB800, #FF8C00); color: #fff; box-shadow: 0 4px 14px rgba(255,140,0,0.35); }
+
+    /* ===== 浮动奖励文字 ===== */
+    .float-word {
+      position: fixed;
+      font-size: 28px;
+      font-weight: 900;
+      pointer-events: none;
+      animation: floatUp 0.9s ease-out forwards;
+      z-index: 999;
+    }
+    @keyframes floatUp {
+      0%   { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-80px) scale(1.3); }
+    }
+
+    /* ===== 关卡完成弹窗 ===== */
+    #overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    #overlay.show { display: flex; }
+    #popup {
+      background: #fff;
+      border-radius: 24px;
+      padding: 32px 28px;
+      text-align: center;
+      max-width: 320px;
+      width: 90%;
+      animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    #popup .emoji { font-size: 56px; }
+    #popup h2 { font-size: 22px; color: #333; margin: 12px 0 6px; }
+    #popup p  { font-size: 14px; color: #888; margin-bottom: 20px; }
+    #popup .score-big { font-size: 42px; font-weight: 900; color: #FF8C00; }
+    #popup .stars { font-size: 36px; letter-spacing: 4px; margin: 8px 0 16px; }
+    #popup .btn-row { display: flex; gap: 10px; }
+    #popup .btn { padding: 13px 0; border-radius: 12px; font-size: 15px; }
+
+    /* ===== 连击提示 ===== */
+    #combo-tip {
+      position: fixed; top: 20%; left: 50%;
+      transform: translateX(-50%);
+      font-size: 32px; font-weight: 900;
+      color: #FF8C00;
+      text-shadow: 0 2px 8px rgba(255,140,0,0.4);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 998;
+    }
+    #combo-tip.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<!-- 顶部 -->
+<div id="header">
+  <span class="title">汉字找一找 🔍</span>
+  <span class="level-badge" id="level-badge">第1关</span>
+</div>
+
+<!-- 统计 -->
+<div id="stats">
+  <div class="stat-box">
+    <div class="stat-label">⭐ 得分</div>
+    <div class="stat-value" id="score-val">0</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-label">⏱ 剩余</div>
+    <div class="stat-value" id="timer-val">60</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-label">✅ 找到</div>
+    <div class="stat-value" id="found-val">0/0</div>
+  </div>
+</div>
+
+<!-- 进度条 -->
+<div id="progress-wrap">
+  <div id="progress-bar-bg"><div id="progress-bar" style="width:100%"></div></div>
+</div>
+
+<!-- 题目 -->
+<div id="question-area">
+  <div id="question-hint">👇 在下方找出包含这个字的词语里，每一个汉字</div>
+  <div id="question-char">字</div>
+  <div id="question-pinyin"></div>
+</div>
+
+<!-- 网格 -->
+<div id="grid-wrap"><div id="grid"></div></div>
+
+<!-- 底部按钮 -->
+<div id="bottom">
+  <button class="btn" id="btn-skip">跳过</button>
+  <button class="btn" id="btn-next">下一题 ▶</button>
+</div>
+
+<!-- 连击提示 -->
+<div id="combo-tip"></div>
+
+<!-- 弹窗 -->
+<div id="overlay">
+  <div id="popup">
+    <div class="emoji" id="popup-emoji">🎉</div>
+    <h2 id="popup-title">关卡完成！</h2>
+    <p id="popup-subtitle">你真棒！</p>
+    <div class="score-big" id="popup-score">0</div>
+    <div class="stars" id="popup-stars">⭐⭐⭐</div>
+    <div class="btn-row">
+      <button class="btn" id="popup-retry"
+        style="background:#fff;color:#E07B00;box-shadow:0 2px 8px rgba(0,0,0,0.1)">再来一次</button>
+      <button class="btn" id="popup-next"
+        style="background:linear-gradient(135deg,#FFB800,#FF8C00);color:#fff">下一关 ▶</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  数据：汉字题库（一年级常用字，每题一个目标字 + 若干干扰字）
+//  格式：{ char, pinyin, level, answers: [目标字集合], grid: [全部字] }
+//  answers 里的字：包含目标字本身，或由目标字组成的词语的字
+//  游戏规则：网格中点击"属于答案集合"的字，点到了得分，点错扣分
+// ============================================================
+
+// -------- 题库 --------
+const QUESTIONS_ALL = [
+  // ---- 第1关（超简单，5×5 格） ----
+  { char:"人", pinyin:"rén", level:1,
+    // 含"人"的常见词：人、大人、工人、人心、人口、人山人海
+    answers:new Set(["人","大","工","心","口","山","海"]),
+    hint:"找出含「人」字的词里出现过的字" },
+  { char:"口", pinyin:"kǒu", level:1,
+    answers:new Set(["口","人","出","入","开"]),
+    hint:"" },
+  { char:"手", pinyin:"shǒu", level:1,
+    answers:new Set(["手","上","下","左","右","洗","拍"]),
+    hint:"" },
+  { char:"目", pinyin:"mù", level:1,
+    answers:new Set(["目","眼","看","见","明","注"]),
+    hint:"" },
+  { char:"日", pinyin:"rì", level:1,
+    answers:new Set(["日","月","明","时","早","晚","今"]),
+    hint:"" },
+
+  // ---- 第2关（稍难，6×6 格） ----
+  { char:"水", pinyin:"shuǐ", level:2,
+    answers:new Set(["水","海","河","泳","雨","喝","喷","清"]),
+    hint:"" },
+  { char:"火", pinyin:"huǒ", level:2,
+    answers:new Set(["火","炎","热","灭","红","烧","炉"]),
+    hint:"" },
+  { char:"山", pinyin:"shān", level:2,
+    answers:new Set(["山","高","大","石","路","云","峰","绿"]),
+    hint:"" },
+  { char:"木", pinyin:"mù", level:2,
+    answers:new Set(["木","树","林","森","桌","椅","柴","板"]),
+    hint:"" },
+  { char:"土", pinyin:"tǔ", level:2,
+    answers:new Set(["土","地","泥","沙","埋","坑","块"]),
+    hint:"" },
+
+  // ---- 第3关（较难，6×7 格） ----
+  { char:"学", pinyin:"xué", level:3,
+    answers:new Set(["学","习","校","生","读","书","写","课","认","字"]),
+    hint:"" },
+  { char:"花", pinyin:"huā", level:3,
+    answers:new Set(["花","草","树","红","绿","美","香","朵","园","春"]),
+    hint:"" },
+  { char:"鱼", pinyin:"yú", level:3,
+    answers:new Set(["鱼","水","钓","海","虾","蟹","游","尾","鲜"]),
+    hint:"" },
+  { char:"鸟", pinyin:"niǎo", level:3,
+    answers:new Set(["鸟","飞","天","树","蛋","叫","翅","羽","巢"]),
+    hint:"" },
+  { char:"家", pinyin:"jiā", level:3,
+    answers:new Set(["家","人","爸","妈","爷","奶","哥","姐","弟","妹","宝"]),
+    hint:"" },
+];
+
+// 所有可用干扰字（从这个池里随机抽，不在 answers 中的字）
+const CHAR_POOL = "地天气风云雨雪冰光影声色香味触觉知思想法时空间距角形态势力气息命运动植矿食住行玩笑哭笑怒悲喜惊恐急慢快停走跑跳跌爬滚推拉转折弯曲平直斜竖横纵深宽高矮胖瘦长短粗细硬软光滑粗糙冷热温湿干燥甜酸苦辣咸鲜红橙黄绿蓝紫白黑灰粉棕".split("");
+
+// ============================================================
+//  游戏状态
+// ============================================================
+let state = {
+  level: 1,           // 当前关卡（1-3）
+  qIndex: 0,          // 当前题目在本关的索引
+  questions: [],      // 本关题目列表
+  currentQ: null,
+  score: 0,
+  timeLeft: 60,
+  timerID: null,
+  found: 0,           // 本题已找到
+  total: 0,           // 本题答案总数（在网格中出现的）
+  combo: 0,           // 连击数
+  comboTimer: null,
+  levelScores: [],    // 每关总分
+};
+
+// DOM 引用
+const $score   = document.getElementById("score-val");
+const $timer   = document.getElementById("timer-val");
+const $found   = document.getElementById("found-val");
+const $qChar   = document.getElementById("question-char");
+const $qPinyin = document.getElementById("question-pinyin");
+const $grid    = document.getElementById("grid");
+const $bar     = document.getElementById("progress-bar");
+const $badge   = document.getElementById("level-badge");
+const $overlay = document.getElementById("overlay");
+const $comboTip= document.getElementById("combo-tip");
+
+// ============================================================
+//  工具函数
+// ============================================================
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function randFrom(arr, n) {
+  return shuffle([...arr]).slice(0, n);
+}
+
+function levelGridSize(lv) {
+  if (lv === 1) return { cols: 5, rows: 5 };
+  if (lv === 2) return { cols: 6, rows: 6 };
+  return { cols: 6, rows: 7 };
+}
+
+function levelTime(lv) {
+  return lv === 1 ? 60 : lv === 2 ? 75 : 90;
+}
+
+// ============================================================
+//  关卡初始化
+// ============================================================
+function initLevel(lv) {
+  state.level  = lv;
+  state.score  = 0;
+  state.combo  = 0;
+  state.qIndex = 0;
+  // 筛选本关题目，打乱顺序取5题
+  state.questions = shuffle(QUESTIONS_ALL.filter(q => q.level === lv)).slice(0, 5);
+  $badge.textContent = `第${lv}关`;
+  updateScore();
+  loadQuestion();
+}
+
+// ============================================================
+//  题目加载
+// ============================================================
+function loadQuestion() {
+  if (state.qIndex >= state.questions.length) {
+    endLevel(); return;
+  }
+  state.currentQ = state.questions[state.qIndex];
+  const q = state.currentQ;
+
+  $qChar.textContent   = q.char;
+  $qPinyin.textContent = q.pinyin;
+  $qChar.style.animation = "none";
+  void $qChar.offsetWidth;
+  $qChar.style.animation = "";
+
+  // 构建网格字符列表
+  buildGrid(q);
+
+  // 重置计时
+  clearInterval(state.timerID);
+  state.timeLeft = levelTime(state.level);
+  updateTimer();
+  state.timerID = setInterval(tick, 1000);
+  state.combo = 0;
+}
+
+function buildGrid(q) {
+  const { cols, rows } = levelGridSize(state.level);
+  const total = cols * rows;
+
+  // 答案字（只取网格能放下的数量）
+  const answerChars = shuffle([...q.answers]).slice(0, Math.floor(total * 0.45));
+
+  // 干扰字：从池子里取不与答案重叠的
+  const used = new Set(answerChars);
+  const distractors = CHAR_POOL.filter(c => !used.has(c));
+  const fillCount = total - answerChars.length;
+  const fillChars = randFrom(distractors, fillCount);
+
+  const cells = shuffle([...answerChars, ...fillChars]);
+
+  // 统计本题在格中出现了多少个答案字
+  state.found = 0;
+  state.total = answerChars.length;
+  updateFound();
+
+  // 渲染网格
+  $grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  $grid.innerHTML = "";
+  cells.forEach(ch => {
+    const div = document.createElement("div");
+    div.className = "cell";
+    div.textContent = ch;
+    div.dataset.char = ch;
+    div.dataset.isAnswer = q.answers.has(ch) ? "1" : "0";
+    div.addEventListener("click", onCellClick);
+    $grid.appendChild(div);
+  });
+
+  // 调整格子字号（根据列数）
+  const fontSize = cols <= 5 ? 28 : 22;
+  document.querySelectorAll(".cell").forEach(c => c.style.fontSize = fontSize + "px");
+}
+
+// ============================================================
+//  点击处理
+// ============================================================
+function onCellClick(e) {
+  const cell = e.currentTarget;
+  if (cell.classList.contains("found") ||
+      cell.classList.contains("correct") ||
+      cell.classList.contains("wrong")) return;
+
+  if (cell.dataset.isAnswer === "1") {
+    // 正确
+    cell.classList.add("correct");
+    setTimeout(() => cell.classList.add("found"), 400);
+    state.found++;
+    state.combo++;
+    const pts = 10 + (state.combo > 1 ? (state.combo - 1) * 5 : 0);
+    state.score += pts;
+    updateScore();
+    updateFound();
+    spawnFloat(e.clientX, e.clientY, "+" + pts, "#4CAF50");
+    showCombo();
+
+    // 全部找到
+    if (state.found >= state.total) {
+      setTimeout(nextQuestion, 800);
+    }
+  } else {
+    // 错误
+    cell.classList.add("wrong");
+    setTimeout(() => cell.classList.remove("wrong"), 350);
+    state.score = Math.max(0, state.score - 5);
+    state.combo = 0;
+    updateScore();
+    spawnFloat(e.clientX, e.clientY, "-5", "#F44336");
+    hideCombo();
+  }
+}
+
+// ============================================================
+//  计时器
+// ============================================================
+function tick() {
+  state.timeLeft--;
+  updateTimer();
+  if (state.timeLeft <= 0) {
+    clearInterval(state.timerID);
+    // 时间到，跳下一题
+    nextQuestion();
+  }
+}
+
+function updateTimer() {
+  $timer.textContent = state.timeLeft;
+  $timer.style.color = state.timeLeft <= 10 ? "#F44336" : "#E07B00";
+  // 进度条
+  const maxTime = levelTime(state.level);
+  $bar.style.width = (state.timeLeft / maxTime * 100) + "%";
+  $bar.style.background = state.timeLeft <= 10
+    ? "linear-gradient(90deg,#FF5722,#F44336)"
+    : "linear-gradient(90deg,#FFB800,#FF8C00)";
+}
+
+// ============================================================
+//  下一题 / 结束
+// ============================================================
+function nextQuestion() {
+  clearInterval(state.timerID);
+  state.qIndex++;
+  loadQuestion();
+}
+
+function endLevel() {
+  clearInterval(state.timerID);
+  const maxScore = state.questions.length * 5 * 10; // 估算满分
+  const ratio = state.score / Math.max(maxScore, 1);
+  const stars = ratio >= 0.8 ? "⭐⭐⭐" : ratio >= 0.5 ? "⭐⭐" : "⭐";
+  const emojis = ratio >= 0.8 ? "🎉" : ratio >= 0.5 ? "😊" : "💪";
+  const titles = ratio >= 0.8 ? "太棒了！" : ratio >= 0.5 ? "不错哦！" : "继续加油！";
+  const subs   = ratio >= 0.8 ? "你认识好多字！" : ratio >= 0.5 ? "再多练练就更厉害啦！" : "多认几遍就会啦～";
+
+  document.getElementById("popup-emoji").textContent   = emojis;
+  document.getElementById("popup-title").textContent   = titles;
+  document.getElementById("popup-subtitle").textContent = subs;
+  document.getElementById("popup-score").textContent   = state.score;
+  document.getElementById("popup-stars").textContent   = stars;
+
+  const nextBtn = document.getElementById("popup-next");
+  if (state.level >= 3) {
+    nextBtn.textContent = "全部完成 🏆";
+    nextBtn.onclick = () => { $overlay.classList.remove("show"); initLevel(1); };
+  } else {
+    nextBtn.textContent = "下一关 ▶";
+    nextBtn.onclick = () => { $overlay.classList.remove("show"); initLevel(state.level + 1); };
+  }
+  document.getElementById("popup-retry").onclick = () => {
+    $overlay.classList.remove("show"); initLevel(state.level);
+  };
+
+  $overlay.classList.add("show");
+}
+
+// ============================================================
+//  UI 更新
+// ============================================================
+function updateScore() { $score.textContent = state.score; }
+function updateFound()  { $found.textContent = `${state.found}/${state.total}`; }
+
+function spawnFloat(x, y, text, color) {
+  const el = document.createElement("div");
+  el.className = "float-word";
+  el.textContent = text;
+  el.style.color = color;
+  el.style.left = (x - 20) + "px";
+  el.style.top  = (y - 20) + "px";
+  document.body.appendChild(el);
+  el.addEventListener("animationend", () => el.remove());
+}
+
+function showCombo() {
+  if (state.combo < 2) return;
+  clearTimeout(state.comboTimer);
+  $comboTip.textContent = `${state.combo} 连击！🔥`;
+  $comboTip.classList.add("show");
+  state.comboTimer = setTimeout(() => $comboTip.classList.remove("show"), 1200);
+}
+function hideCombo() { $comboTip.classList.remove("show"); }
+
+// ============================================================
+//  按钮绑定
+// ============================================================
+document.getElementById("btn-skip").onclick = () => {
+  state.combo = 0;
+  nextQuestion();
+};
+document.getElementById("btn-next").onclick = () => {
+  state.combo = 0;
+  nextQuestion();
+};
+
+// ============================================================
+//  启动
+// ============================================================
+initLevel(1);
+</script>
+</body>
+</html>
