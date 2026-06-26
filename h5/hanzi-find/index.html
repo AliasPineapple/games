@@ -419,6 +419,7 @@ let G = {
   combo: 0,
   comboTimer: null,
   timeExpired: false,// 是否时间到（区别于主动跳过）
+  locked: false,     // 题目已结束锁定，防止重复触发跳题
 };
 
 // DOM
@@ -492,6 +493,7 @@ function loadQuestion(){
   G.currentQ   = G.questions[G.qIndex];
   G.foundSet   = new Set();
   G.timeExpired = false;
+  G.locked      = false;  // 新题开始，解锁
 
   $qChar.textContent   = G.currentQ.char;
   $qPinyin.textContent = G.currentQ.pinyin || "";
@@ -553,6 +555,8 @@ function buildGrid(){
 // ════════════════════════════════════════════════════════════
 function onCellClick(e){
   const cell = e.currentTarget;
+  // 锁定期间（时间到 / 全部找到的过渡期）拒绝所有点击
+  if(G.locked) return;
   if(cell.classList.contains("found")||cell.classList.contains("correct")||
      cell.classList.contains("wrong")) return;
 
@@ -566,7 +570,12 @@ function onCellClick(e){
     updateScore(); updateFound();
     spawnFloat(e.clientX, e.clientY, "+"+pts, "#4CAF50");
     showCombo();
-    if(G.foundSet.size >= G.total){ setTimeout(nextQuestion, 700); }
+    if(G.foundSet.size >= G.total){
+      // 全部找到：锁定后延迟进下一题
+      G.locked = true;
+      clearInterval(G.timerID);
+      setTimeout(nextQuestion, 700);
+    }
   } else {
     cell.classList.add("wrong");
     setTimeout(()=>cell.classList.remove("wrong"), 350);
@@ -586,6 +595,8 @@ function tick(){
   updateTimer();
   if(G.timeLeft <= 0){
     clearInterval(G.timerID);
+    if(G.locked) return;  // 已经全部找到正在过渡，不再弹答案页
+    G.locked      = true;
     G.timeExpired = true;
     showAnswerOverlay();
   }
@@ -662,12 +673,13 @@ document.getElementById("ao-next").onclick = ()=>{
 // ════════════════════════════════════════════════════════════
 function nextQuestion(){
   clearInterval(G.timerID);
+  G.locked = false;  // 解锁（由 nextQuestion 负责推进）
   G.qIndex++;
   loadQuestion();
 }
 
-$btnSkip.onclick = ()=>{ G.combo=0; nextQuestion(); };
-$btnNext.onclick = ()=>{ G.combo=0; nextQuestion(); };
+$btnSkip.onclick = ()=>{ if(G.locked) return; G.locked=true; G.combo=0; clearInterval(G.timerID); nextQuestion(); };
+$btnNext.onclick = ()=>{ if(G.locked) return; G.locked=true; G.combo=0; clearInterval(G.timerID); nextQuestion(); };
 
 // ════════════════════════════════════════════════════════════
 //  关卡结束
