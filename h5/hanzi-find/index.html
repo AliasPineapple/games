@@ -13,27 +13,30 @@
       user-select:none;
     }
 
-    /* ── 难度选择首屏 ── */
+    /* ── 年级选择首屏 ── */
     #screen-grade{
       position:fixed;inset:0;background:linear-gradient(135deg,#FFF9E6,#FFE0A0);
-      display:flex;flex-direction:column;align-items:center;justify-content:center;
-      z-index:200;padding:24px;
+      display:flex;flex-direction:column;align-items:center;
+      z-index:200;padding:16px;overflow-y:auto;
     }
-    #screen-grade h1{font-size:26px;color:#E07B00;margin-bottom:6px}
-    #screen-grade p{font-size:13px;color:#999;margin-bottom:24px}
-    .grade-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:360px}
+    #screen-grade h1{font-size:24px;color:#E07B00;margin:8px 0 4px;text-align:center}
+    #screen-grade .sub{font-size:12px;color:#aaa;margin-bottom:12px}
+    .stage-label{
+      width:100%;max-width:380px;font-size:12px;color:#aaa;
+      margin:8px 0 4px;padding-left:4px;font-weight:600;letter-spacing:1px;
+    }
+    .grade-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:380px;margin-bottom:4px}
     .grade-btn{
-      background:#fff;border:2.5px solid #FFD080;border-radius:16px;
-      padding:16px 12px;text-align:center;cursor:pointer;
+      background:#fff;border:2px solid #FFD080;border-radius:14px;
+      padding:10px 6px;text-align:center;cursor:pointer;
       transition:transform .15s,box-shadow .15s,border-color .15s;
-      box-shadow:0 2px 8px rgba(0,0,0,.07);
+      box-shadow:0 2px 6px rgba(0,0,0,.06);
     }
     .grade-btn:active{transform:scale(.95)}
-    .grade-btn:hover{border-color:#FF8C00;box-shadow:0 4px 14px rgba(255,140,0,.25)}
-    .grade-btn .grade-icon{font-size:30px}
-    .grade-btn .grade-name{font-size:15px;font-weight:700;color:#333;margin:4px 0 2px}
-    .grade-btn .grade-desc{font-size:11px;color:#999}
-    .grade-btn.selected{border-color:#FF8C00;background:#FFF3E0}
+    .grade-btn:hover{border-color:#FF8C00;box-shadow:0 3px 10px rgba(255,140,0,.22)}
+    .grade-btn .gi{font-size:22px}
+    .grade-btn .gn{font-size:13px;font-weight:700;color:#333;margin:3px 0 1px}
+    .grade-btn .gd{font-size:10px;color:#bbb}
 
     /* ── 顶栏 ── */
     #header{
@@ -85,7 +88,6 @@
       box-shadow:0 4px 12px rgba(76,175,80,.4);animation:correctBounce .35s cubic-bezier(.34,1.56,.64,1)}
     .cell.wrong{background:linear-gradient(135deg,#F44336,#EF5350);color:#fff;animation:shake .3s}
     .cell.found{background:#E8F5E9;color:#9E9E9E;pointer-events:none}
-    /* 答案提示高亮（时间到后显示） */
     .cell.reveal{
       background:linear-gradient(135deg,#FFB800,#FF8C00);color:#fff;
       box-shadow:0 0 0 3px #FFD080;animation:revealPulse 1s ease infinite alternate;
@@ -103,7 +105,7 @@
     #btn-next{background:linear-gradient(135deg,#FFB800,#FF8C00);color:#fff;
       box-shadow:0 4px 14px rgba(255,140,0,.35)}
 
-    /* ── 时间到 答案提示页（覆盖在网格上） ── */
+    /* ── 答案提示页 ── */
     #answer-overlay{
       display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
       z-index:150;align-items:center;justify-content:center;
@@ -119,7 +121,6 @@
     #answer-box .ao-sub{font-size:13px;color:#888;margin-bottom:16px}
     #answer-box .ao-char-big{font-size:54px;font-weight:900;color:#E07B00;line-height:1;margin-bottom:6px}
     #answer-box .ao-pinyin{font-size:14px;color:#bbb;margin-bottom:12px}
-    /* 答案字列表 */
     #answer-chars{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:20px}
     .ans-chip{
       background:#FFF3E0;border:1.5px solid #FFB800;
@@ -163,37 +164,50 @@
 </head>
 <body>
 
-<!-- ══ 难度选择首屏 ══ -->
+<!-- ══ 年级选择首屏 ══ -->
 <div id="screen-grade">
   <h1>汉字找一找 🔍</h1>
-  <p>选择你的年级，开始挑战！</p>
+  <p class="sub">选择年级，开始挑战！笔画越多越难～</p>
+
+  <div class="stage-label">🌱 幼儿园</div>
   <div class="grade-grid">
-    <div class="grade-btn" data-grade="kindergarten">
-      <div class="grade-icon">🌱</div>
-      <div class="grade-name">幼儿园</div>
-      <div class="grade-desc">最简单基础字<br>象形字为主</div>
-    </div>
-    <div class="grade-btn" data-grade="primary">
-      <div class="grade-icon">📚</div>
-      <div class="grade-name">小学</div>
-      <div class="grade-desc">一至六年级常用字<br>约1500字范围</div>
-    </div>
-    <div class="grade-btn" data-grade="middle">
-      <div class="grade-icon">🏫</div>
-      <div class="grade-name">初中</div>
-      <div class="grade-desc">常用字+生僻字<br>约2500字范围</div>
-    </div>
-    <div class="grade-btn" data-grade="high">
-      <div class="grade-icon">🎓</div>
-      <div class="grade-name">高中</div>
-      <div class="grade-desc">成语/古文用字<br>含部分复杂字</div>
-    </div>
-    <div class="grade-btn" data-grade="college" style="grid-column:1/-1">
-      <div class="grade-icon">🏛️</div>
-      <div class="grade-name">大学 · 究极挑战</div>
-      <div class="grade-desc">生僻字 + 繁体字 + 古汉字，挑战极限！</div>
-    </div>
+    <div class="grade-btn" data-grade="kg_s"><div class="gi">🌸</div><div class="gn">小班</div><div class="gd">象形字</div></div>
+    <div class="grade-btn" data-grade="kg_m"><div class="gi">🌼</div><div class="gn">中班</div><div class="gd">身体字</div></div>
+    <div class="grade-btn" data-grade="kg_l"><div class="gi">🌻</div><div class="gn">大班</div><div class="gd">常用字</div></div>
   </div>
+
+  <div class="stage-label">📚 小学</div>
+  <div class="grade-grid">
+    <div class="grade-btn" data-grade="p1"><div class="gi">1️⃣</div><div class="gn">一年级</div><div class="gd">基础字</div></div>
+    <div class="grade-btn" data-grade="p2"><div class="gi">2️⃣</div><div class="gn">二年级</div><div class="gd">常用字</div></div>
+    <div class="grade-btn" data-grade="p3"><div class="gi">3️⃣</div><div class="gn">三年级</div><div class="gd">偏旁字</div></div>
+    <div class="grade-btn" data-grade="p4"><div class="gi">4️⃣</div><div class="gn">四年级</div><div class="gd">扩展字</div></div>
+    <div class="grade-btn" data-grade="p5"><div class="gi">5️⃣</div><div class="gn">五年级</div><div class="gd">多画字</div></div>
+    <div class="grade-btn" data-grade="p6"><div class="gi">6️⃣</div><div class="gn">六年级</div><div class="gd">综合字</div></div>
+  </div>
+
+  <div class="stage-label">🏫 初中</div>
+  <div class="grade-grid">
+    <div class="grade-btn" data-grade="m1"><div class="gi">初1</div><div class="gn">初一</div><div class="gd">生字扩展</div></div>
+    <div class="grade-btn" data-grade="m2"><div class="gi">初2</div><div class="gn">初二</div><div class="gd">难字入门</div></div>
+    <div class="grade-btn" data-grade="m3"><div class="gi">初3</div><div class="gn">初三</div><div class="gd">古字初探</div></div>
+  </div>
+
+  <div class="stage-label">🎓 高中</div>
+  <div class="grade-grid">
+    <div class="grade-btn" data-grade="h1"><div class="gi">高1</div><div class="gn">高一</div><div class="gd">生僻字</div></div>
+    <div class="grade-btn" data-grade="h2"><div class="gi">高2</div><div class="gn">高二</div><div class="gd">古字部件</div></div>
+    <div class="grade-btn" data-grade="h3"><div class="gi">高3</div><div class="gn">高三</div><div class="gd">高难综合</div></div>
+  </div>
+
+  <div class="stage-label">🏛️ 大学</div>
+  <div class="grade-grid">
+    <div class="grade-btn" data-grade="u1"><div class="gi">大1</div><div class="gn">大一</div><div class="gd">极难字</div></div>
+    <div class="grade-btn" data-grade="u2"><div class="gi">大2</div><div class="gn">大二</div><div class="gd">繁体字</div></div>
+    <div class="grade-btn" data-grade="u3"><div class="gi">大3</div><div class="gn">大三</div><div class="gd">叠字奇观</div></div>
+    <div class="grade-btn" data-grade="u4"><div class="gi">大4</div><div class="gn">大四</div><div class="gd">究极挑战</div></div>
+  </div>
+  <div style="height:20px"></div>
 </div>
 
 <!-- ══ 游戏主界面 ══ -->
@@ -276,172 +290,280 @@
 </div>
 
 <script>
-// ════════════════════════════════════════════════════════════
-//  题库 —— 按难度分级
-//  每题：{ char, pinyin, answers: Set<string>, hint? }
-// ════════════════════════════════════════════════════════════
 
+// ════════════════════════════════════════════════════════
+//  年级元数据  timePerQ=秒  cols/rows=网格大小
+// ════════════════════════════════════════════════════════
 const GRADE_META = {
-  kindergarten:{ name:"幼儿园", icon:"🌱", levels:3, timePerQ:90, gridCols:4, gridRows:4 },
-  primary:     { name:"小学",   icon:"📚", levels:4, timePerQ:70, gridCols:5, gridRows:5 },
-  middle:      { name:"初中",   icon:"🏫", levels:4, timePerQ:60, gridCols:6, gridRows:6 },
-  high:        { name:"高中",   icon:"🎓", levels:4, timePerQ:50, gridCols:6, gridRows:7 },
-  college:     { name:"大学",   icon:"🏛️", levels:5, timePerQ:45, gridCols:7, gridRows:7 },
+  kg_s:{name:"幼儿园小班",icon:"🌸",timePerQ:90,cols:4,rows:4,qCount:6},
+  kg_m:{name:"幼儿园中班",icon:"🌼",timePerQ:85,cols:4,rows:4,qCount:6},
+  kg_l:{name:"幼儿园大班",icon:"🌻",timePerQ:80,cols:4,rows:5,qCount:6},
+  p1:  {name:"小学一年级",icon:"1️⃣",timePerQ:75,cols:4,rows:5,qCount:6},
+  p2:  {name:"小学二年级",icon:"2️⃣",timePerQ:70,cols:5,rows:5,qCount:6},
+  p3:  {name:"小学三年级",icon:"3️⃣",timePerQ:65,cols:5,rows:5,qCount:6},
+  p4:  {name:"小学四年级",icon:"4️⃣",timePerQ:60,cols:5,rows:6,qCount:6},
+  p5:  {name:"小学五年级",icon:"5️⃣",timePerQ:55,cols:5,rows:6,qCount:6},
+  p6:  {name:"小学六年级",icon:"6️⃣",timePerQ:55,cols:5,rows:6,qCount:6},
+  m1:  {name:"初中一年级",icon:"初1",timePerQ:50,cols:6,rows:6,qCount:6},
+  m2:  {name:"初中二年级",icon:"初2",timePerQ:48,cols:6,rows:6,qCount:6},
+  m3:  {name:"初中三年级",icon:"初3",timePerQ:45,cols:6,rows:6,qCount:6},
+  h1:  {name:"高中一年级",icon:"高1",timePerQ:45,cols:6,rows:7,qCount:6},
+  h2:  {name:"高中二年级",icon:"高2",timePerQ:40,cols:6,rows:7,qCount:6},
+  h3:  {name:"高中三年级",icon:"高3",timePerQ:40,cols:6,rows:7,qCount:6},
+  u1:  {name:"大学一年级",icon:"大1",timePerQ:40,cols:7,rows:7,qCount:6},
+  u2:  {name:"大学二年级",icon:"大2",timePerQ:38,cols:7,rows:7,qCount:6},
+  u3:  {name:"大学三年级",icon:"大3",timePerQ:35,cols:7,rows:7,qCount:6},
+  u4:  {name:"大学四年级",icon:"大4",timePerQ:35,cols:7,rows:8,qCount:6},
 };
 
-// 干扰字池（各难度共用，不在答案里的字会被当干扰字）
-const POOL = {
-  kindergarten:"日月水火山木土石人口手目耳心鸟鱼虫花草云风雨天地上下大小左右前后里外多少东西南北",
-  primary:"地天气风云雨雪冰光影声色香味触觉知思想法时空间距角形态势力气息命运动植矿食住行玩笑哭笑怒悲喜惊恐急慢快停走跑跳跌爬滚推拉转折弯曲平直斜竖横纵深宽高矮胖瘦长短粗细冷热温湿干燥甜酸苦辣咸鲜红橙黄绿蓝紫白黑灰粉棕",
-  middle:"赋闲篱笆晦涩朦胧琉璃珊瑚玛瑙珍珠翡翠碧绿橄榄磁铁铜铝铁钢锌镍铬锰钼钨钒铂金银镉汞铅锡镁钙钾钠氯氟溴碘硫磷氮氧氢碳氦氖氩氙氪钪钛钒铬锰铁钴镍铜锌镓锗",
-  high:"麒麟凤凰龟蛇玄武朱雀白虎青龙璇玑璧玦璜珩琮璋琥珀琼瑰璀璨瑾瑜玫瑰殷墟鼎彝爵觚罍尊壶盉匜盂簋簠甗鬲豆豋俎",
-  college:"龘龖靐齉齾爩鬱鬮鸞麤黲黮黰黯黷黶黵黴黱黰黯疊疉疇曡疊壘壩壘叠亾亿仨伀伄伅伆伇伈伉伊伋伌伍伎伏伐休伒伓伔伕众众伙会伛伜伝伞伟传伡伢伣伤伥伦伧伨伩伪伫伬伭伮伯估伱伲伳伴伵伶伷伸伹伺伻似伽伾伿佀佁佂佃佄佅但佇佈佉佊佋佌位低住佐佑体",
+// ════════════════════════════════════════════════════════
+//  干扰字池（每年级一份，答案字会被过滤掉）
+// ════════════════════════════════════════════════════════
+const POOL={
+  kg_s:"日月水火山木土石人口手目耳心鸟鱼虫花草云风雨天地上下大小左右前后里外多少东西南北中",
+  kg_m:"日月水火山木土石人口手目耳心鸟鱼虫花草云风雨天地上下大小左右前后里外多少东西南北中",
+  kg_l:"大子女言草虫石金日月水火山木土口手目耳心鸟鱼云风雨天地上下左右前后里外多少东西南北",
+  p1:"日月口手水火木人大小上下左右天地东西南北云风雨雪山石土石金草虫鱼鸟心足目耳女子言",
+  p2:"土心言金草虫足目日月口手水火木人大小上下左右天地东西南北云风雨雪山石金鱼鸟",
+  p3:"氵木讠土日力山心水火人口手大小天地东西南北云风雨雪金草虫鱼鸟足目耳女子言石",
+  p4:"攴页贝纟火雨鸟鱼土心言金草虫足目日月口手水木人大小天地东西南北云风山石",
+  p5:"走食示页竹言目糸土心金草虫足日月口手水火木人大小天地东西南北云风雨山石",
+  p6:"王月口力攴贝雨纟土心言金草虫足目日手水火木人大小天地东西南北云风山石",
+  m1:"氵讠纟走示页斤隹土心言金草虫足目日月口手水火木人大小天地东西南北云风山石",
+  m2:"虍酉鬼攴贝糸臼矢土心言金草虫足目日月口手水火木人大小天地东西南北云风山石",
+  m3:"羊豕酉隹鬼糸臼龙土心言金草虫足目日月口手水火木人大小天地东西南北云风山石",
+  h1:"卩臣页斤鸟虍革骨土心言金草虫足目日月口手水火木人大小天地东西南北云风山石",
+  h2:"彡殳囗臼矢鼎豕髟土心言金草虫足目日月口手水火木人大小天地东西南北云风山石",
+  h3:"龙鬼韦革骨髟鱼食土心言金草虫足目日月口手水火木人大小天地东西南北云风山石",
+  u1:"黑鼠韦革骨髟鬲龟土心言金草虫足目日月口手水火木人大小天地东西南北云风山石",
+  u2:"龍鳳鐵學愛馬魚書土心言金草虫足目日月口手水火木人大小天地东西南北云风山石",
+  u3:"龘靐燚淼森磊齉爨土心言金草虫足目日月口手水火木人大小天地东西南北云风山石",
+  u4:"鬱鑾龥齾爩龖鱻齉土心言金草虫足目日月口手水火木人大小天地东西南北云风山石",
 };
 
-// ── 幼儿园题库 ──
-const Q_kindergarten = [
-  {char:"日",pinyin:"rì",  answers:new Set(["日","月","明","早","晚","阳","晴","晒","晨"])},
-  {char:"月",pinyin:"yuè", answers:new Set(["月","明","期","望","朗","朔","朝","霜"])},
-  {char:"水",pinyin:"shuǐ",answers:new Set(["水","河","海","泳","雨","喝","清","泡","洗"])},
-  {char:"火",pinyin:"huǒ", answers:new Set(["火","炎","热","灭","红","烧","炉","焰","灰"])},
-  {char:"山",pinyin:"shān",answers:new Set(["山","高","石","路","云","峰","岩","岭","岛"])},
-  {char:"木",pinyin:"mù",  answers:new Set(["木","树","林","森","桌","椅","柴","板","棍"])},
-  {char:"人",pinyin:"rén", answers:new Set(["人","大","入","从","众","他","你","她","们"])},
-  {char:"口",pinyin:"kǒu", answers:new Set(["口","吃","喝","叫","唱","喊","啊","嘴","唇"])},
-  {char:"手",pinyin:"shǒu",answers:new Set(["手","拍","打","推","拉","摸","握","拿","抱"])},
-  {char:"鸟",pinyin:"niǎo",answers:new Set(["鸟","飞","天","蛋","叫","翅","羽","巢","鸡"])},
-  {char:"鱼",pinyin:"yú",  answers:new Set(["鱼","水","钓","虾","蟹","游","尾","鲜","鲸"])},
-  {char:"花",pinyin:"huā", answers:new Set(["花","草","红","绿","美","香","朵","园","春"])},
-];
-
-// ── 小学题库 ──
-const Q_primary = [
-  {char:"学",pinyin:"xué", answers:new Set(["学","习","校","生","读","书","写","课","认","字","教","师"])},
-  {char:"家",pinyin:"jiā", answers:new Set(["家","人","爸","妈","爷","奶","哥","姐","弟","妹","宝","亲"])},
-  {char:"心",pinyin:"xīn", answers:new Set(["心","思","想","爱","忘","忙","快","慢","情","意","念","感"])},
-  {char:"言",pinyin:"yán", answers:new Set(["言","话","语","说","读","谢","请","诗","词","讲","论","评"])},
-  {char:"金",pinyin:"jīn", answers:new Set(["金","银","铁","铜","钢","钱","针","锁","键","铃","铅","锅"])},
-  {char:"草",pinyin:"cǎo", answers:new Set(["草","花","树","绿","野","地","坪","丛","荒","原","芳","茂"])},
-  {char:"天",pinyin:"tiān",answers:new Set(["天","空","云","雨","星","月","阳","气","蓝","晴","霞","虹"])},
-  {char:"车",pinyin:"chē", answers:new Set(["车","轮","路","行","驶","停","转","辆","轨","速","乘","站"])},
-  {char:"石",pinyin:"shí", answers:new Set(["石","岩","碑","磨","砖","矿","硬","矩","砂","碎","碰","礁"])},
-  {char:"力",pinyin:"lì",  answers:new Set(["力","强","勇","劲","助","努","动","功","勤","劳","励","效"])},
-  {char:"目",pinyin:"mù",  answers:new Set(["目","眼","看","见","明","注","睛","盲","瞳","视","观","望"])},
-  {char:"食",pinyin:"shí", answers:new Set(["食","吃","饭","菜","饮","粮","餐","饿","饱","味","鲜","香"])},
-];
-
-// ── 初中题库 ──
-const Q_middle = [
-  {char:"道",pinyin:"dào", answers:new Set(["道","路","德","说","知","导","理","义","礼","法","术","通"])},
-  {char:"文",pinyin:"wén", answers:new Set(["文","字","化","明","学","章","武","史","献","艺","诗","语"])},
-  {char:"义",pinyin:"yì",  answers:new Set(["义","正","道","理","仁","礼","智","信","节","勇","廉","耻"])},
-  {char:"青",pinyin:"qīng",answers:new Set(["青","春","年","少","绿","蓝","清","请","情","晴","静","净"])},
-  {char:"古",pinyin:"gǔ",  answers:new Set(["古","今","代","老","典","旧","迹","史","诗","词","书","画"])},
-  {char:"光",pinyin:"guāng",answers:new Set(["光","明","亮","辉","耀","彩","辛","阴","影","照","闪","灿"])},
-  {char:"兵",pinyin:"bīng",answers:new Set(["兵","战","军","将","师","卒","器","阵","营","旗","令","勇"])},
-  {char:"民",pinyin:"mín", answers:new Set(["民","人","国","族","众","主","权","利","生","俗","风","情"])},
-  {char:"志",pinyin:"zhì", answers:new Set(["志","心","向","气","意","愿","理","远","坚","节","忘","励"])},
-  {char:"德",pinyin:"dé",  answers:new Set(["德","品","道","行","性","善","义","仁","礼","智","信","志"])},
-  {char:"春",pinyin:"chūn",answers:new Set(["春","夏","秋","冬","节","风","花","雨","草","暖","光","天"])},
-  {char:"情",pinyin:"qíng",answers:new Set(["情","感","爱","恨","思","念","深","真","意","怀","心","愁"])},
-];
-
-// ── 高中题库（含部分难字） ──
-const Q_high = [
-  {char:"赋",pinyin:"fù",  answers:new Set(["赋","诗","词","曲","文","章","体","格","韵","律","义","情"])},
-  {char:"璧",pinyin:"bì",  answers:new Set(["璧","玉","珠","琳","琅","琼","瑰","璀","璨","瑾","瑜","珍"])},
-  {char:"鼎",pinyin:"dǐng",answers:new Set(["鼎","彝","爵","觚","罍","尊","壶","盉","匜","盂","簋","豋"])},
-  {char:"谏",pinyin:"jiàn",answers:new Set(["谏","言","劝","议","论","批","评","责","正","直","诚","忠"])},
-  {char:"骊",pinyin:"lí",  answers:new Set(["骊","驰","骏","骐","骑","骗","驾","驱","驹","骋","驴","骆"])},
-  {char:"殷",pinyin:"yīn", answers:new Set(["殷","商","朝","代","古","史","墟","迹","文","化","礼","器"])},
-  {char:"澜",pinyin:"lán", answers:new Set(["澜","波","涛","浪","潮","汹","涌","激","湍","急","流","浩"])},
-  {char:"霁",pinyin:"jì",  answers:new Set(["霁","晴","明","朗","清","爽","雨","雪","风","云","散","开"])},
-  {char:"矍",pinyin:"jué", answers:new Set(["矍","铄","健","朗","精","神","奕","耄","耋","老","迈","龄"])},
-  {char:"孑",pinyin:"jié", answers:new Set(["孑","孓","孤","独","立","遗","余","存","剩","单","一","零"])},
-  {char:"籁",pinyin:"lài", answers:new Set(["籁","天","万","声","音","韵","响","乐","律","调","节","曲"])},
-  {char:"熠",pinyin:"yì",  answers:new Set(["熠","耀","灿","烂","辉","煌","闪","光","明","亮","璀","璨"])},
-];
-
-// ── 大学题库（生僻字 + 繁体字 + 古汉字） ──
-const Q_college = [
-  {char:"龘",pinyin:"dá",  answers:new Set(["龘","龙","飞","腾","升","云","霄","威","猛","势","盛","壮"]),
-   hint:"三龙并行，气势磅礴"},
-  {char:"靐",pinyin:"bìng",answers:new Set(["靐","雷","霆","电","闪","轰","鸣","震","声","响","惊","天"]),
-   hint:"三雷叠加，声若惊雷"},
-  {char:"齉",pinyin:"nàng",answers:new Set(["齉","鼻","塞","声","音","哑","浊","沉","重","闷","堵","涕"]),
-   hint:"鼻音不通貌"},
-  // 繁体字组
-  {char:"龍",pinyin:"lóng（繁）",answers:new Set(["龍","鳳","鸞","麟","龜","蛇","虎","豹","獅","象","鯨","鷹"]),
-   hint:"繁体龙，传统文化象征"},
-  {char:"愛",pinyin:"ài（繁）", answers:new Set(["愛","情","恨","思","念","心","意","憐","憫","懷","感","戀"]),
-   hint:"繁体爱，中有一心"},
-  {char:"學",pinyin:"xué（繁）",answers:new Set(["學","習","校","師","書","讀","寫","課","識","字","教","問"]),
-   hint:"繁体学"},
-  {char:"鬱",pinyin:"yù",      answers:new Set(["鬱","悶","結","積","沉","抑","憂","愁","傷","悲","哀","哭"]),
-   hint:"郁郁不得志，繁体字"},
-  {char:"鑾",pinyin:"luán",    answers:new Set(["鑾","鈴","金","銀","玉","璧","寶","輦","駕","儀","御","宮"]),
-   hint:"皇帝的车铃"},
-  // 古汉字/罕用字
-  {char:"燚",pinyin:"yì",      answers:new Set(["燚","火","炎","焰","焱","熱","燃","燒","光","明","灼","炽"]),
-   hint:"四火，烈焰之意"},
-  {char:"淼",pinyin:"miǎo",    answers:new Set(["淼","水","海","洋","江","河","湖","波","浪","潮","汪","渺"]),
-   hint:"三水，水势浩渺"},
-  {char:"森",pinyin:"sēn",     answers:new Set(["森","木","林","树","叶","枝","根","干","丛","茂","幽","深"]),
-   hint:"三木成森"},
-  {char:"磊",pinyin:"lěi",     answers:new Set(["磊","石","岩","碑","矿","砾","砂","岭","峰","峦","崖","壁"]),
-   hint:"三石，坦荡磊落"},
-];
-
-const GRADE_QUESTIONS = {
-  kindergarten: Q_kindergarten,
-  primary:      Q_primary,
-  middle:       Q_middle,
-  high:         Q_high,
-  college:      Q_college,
+// ════════════════════════════════════════════════════════
+//  题库
+// ════════════════════════════════════════════════════════
+const QDB={
+  kg_s:[
+    {char:"日",pinyin:"rì",    answers:["日","明","时","星","晴","早","晚","阳","晒","晨","春","旦"]},
+    {char:"月",pinyin:"yuè",   answers:["月","明","期","朗","朝","望","朔","霜","腊","胖"]},
+    {char:"山",pinyin:"shān",  answers:["山","岩","岛","峰","岭","崖","峡","岗","嵩","峻"]},
+    {char:"水",pinyin:"shuǐ",  answers:["水","冰","泳","河","海","泡","泥","泉","洗","清","流","波"]},
+    {char:"火",pinyin:"huǒ",   answers:["火","炎","烧","炉","灯","灰","烟","炸","燃","焰"]},
+    {char:"木",pinyin:"mù",    answers:["木","树","林","森","桌","椅","柴","板","棍","根","桥","梯"]},
+    {char:"土",pinyin:"tǔ",    answers:["土","地","坐","坏","块","坡","城","墙","填","坑"]},
+    {char:"口",pinyin:"kǒu",   answers:["口","吃","喝","叫","唱","啊","嘴","吐","喊","名","回"]},
+  ],
+  kg_m:[
+    {char:"人",pinyin:"rén",   answers:["人","从","众","他","你","她","们","大","入","个","今","会"]},
+    {char:"手",pinyin:"shǒu",  answers:["手","拍","打","推","拉","摸","握","拿","抱","扔","提","指"]},
+    {char:"目",pinyin:"mù",    answers:["目","看","眼","眉","睛","盲","瞳","眺","睡","眨","瞪","盼"]},
+    {char:"耳",pinyin:"ěr",    answers:["耳","取","聪","聋","聊","聂","耻","闻","联","职"]},
+    {char:"心",pinyin:"xīn",   answers:["心","想","思","忘","忙","快","慢","忍","忆","怕","悲","恨"]},
+    {char:"足",pinyin:"zú",    answers:["足","路","跑","跳","跌","踢","跪","蹦","踏","跟","踩","距"]},
+    {char:"鸟",pinyin:"niǎo",  answers:["鸟","鸡","鸭","鹅","鸽","鸦","鹤","鹰","鹦","鸵","鸮","鸬"]},
+    {char:"鱼",pinyin:"yú",    answers:["鱼","鲜","鲤","鲫","鲸","鲨","鳗","鳟","鳝","鲶","鲍","鲳"]},
+  ],
+  kg_l:[
+    {char:"大",pinyin:"dà",    answers:["大","天","太","夫","奇","奔","奥","套","奉","奏","央","夹"]},
+    {char:"子",pinyin:"zǐ",    answers:["子","字","好","孩","孙","孤","孔","孟","学","孝","孽","孺"]},
+    {char:"女",pinyin:"nǚ",    answers:["女","她","妈","奶","姐","妹","姑","娘","婆","婶","妻","姿"]},
+    {char:"言",pinyin:"yán",   answers:["言","话","语","说","读","谢","请","诗","词","讲","论","评"]},
+    {char:"草",pinyin:"cǎo",   answers:["草","花","苗","茶","苹","荷","芳","茂","莲","葡","蒜","葱"]},
+    {char:"虫",pinyin:"chóng", answers:["虫","蚂","蚊","蜂","蝶","蚁","蟹","蜘","蝉","蛙","螺","蛇"]},
+    {char:"石",pinyin:"shí",   answers:["石","岩","砖","矿","砂","碎","磨","碑","硬","础","碰","礁"]},
+    {char:"金",pinyin:"jīn",   answers:["金","银","铁","铜","钢","钱","针","锁","键","铃","铅","锅"]},
+  ],
+  p1:[
+    {char:"日",pinyin:"rì",    answers:["日","明","时","晴","早","晚","阳","晒","晨","春","旦","暗"]},
+    {char:"月",pinyin:"yuè",   answers:["月","明","期","朗","朝","望","腊","胖","朔","育"]},
+    {char:"口",pinyin:"kǒu",   answers:["口","吃","喝","叫","唱","啊","嘴","吐","喊","名","回","只"]},
+    {char:"手",pinyin:"shǒu",  answers:["手","拍","打","推","拉","摸","握","拿","抱","扔","提","指"]},
+    {char:"水",pinyin:"shuǐ",  answers:["水","冰","泳","河","海","泡","泥","泉","洗","清","流","波"]},
+    {char:"火",pinyin:"huǒ",   answers:["火","炎","烧","炉","灯","灰","烟","炸","燃","焰"]},
+    {char:"木",pinyin:"mù",    answers:["木","树","林","森","桌","椅","柴","板","棍","根","桥","梯"]},
+    {char:"人",pinyin:"rén",   answers:["人","从","众","他","你","她","们","大","入","个","今","会"]},
+  ],
+  p2:[
+    {char:"土",pinyin:"tǔ",    answers:["土","地","坐","坏","块","坡","城","墙","填","坑","堆","基"]},
+    {char:"心",pinyin:"xīn",   answers:["心","想","思","忘","忙","快","慢","忍","忆","怕","悲","恨"]},
+    {char:"言",pinyin:"yán",   answers:["言","话","语","说","读","谢","请","诗","词","讲","论","评"]},
+    {char:"金",pinyin:"jīn",   answers:["金","银","铁","铜","钢","钱","针","锁","键","铃","铅","锅"]},
+    {char:"草",pinyin:"cǎo",   answers:["草","花","苗","茶","苹","荷","芳","茂","莲","葡","蒜","葱"]},
+    {char:"虫",pinyin:"chóng", answers:["虫","蚂","蚊","蜂","蝶","蚁","蟹","蜘","蝉","蛙","螺","蛇"]},
+    {char:"足",pinyin:"zú",    answers:["足","路","跑","跳","跌","踢","跪","蹦","踏","跟","踩","距"]},
+    {char:"目",pinyin:"mù",    answers:["目","看","眼","眉","睛","盲","瞳","眺","睡","眨","瞪","盼"]},
+  ],
+  p3:[
+    {char:"氵",pinyin:"shuǐ（三点水）",answers:["河","海","泳","泡","泥","泉","洗","清","流","波","湖","漂","游","汗","汤","泪"]},
+    {char:"木",pinyin:"mù",    answers:["木","树","林","森","桌","椅","柴","板","棍","根","桥","梯","松","枫","桂","梅"]},
+    {char:"讠",pinyin:"yán（言字旁）",answers:["话","语","说","读","谢","请","诗","词","讲","论","评","记","识","试","误","课"]},
+    {char:"日",pinyin:"rì",    answers:["日","明","时","晴","早","晚","阳","晒","晨","春","旦","暗","昨","昔","映","昂"]},
+    {char:"力",pinyin:"lì",    answers:["力","劲","助","努","动","功","勤","劳","励","效","勇","勋","勉","劈","勃","勒"]},
+    {char:"山",pinyin:"shān",  answers:["山","岩","岛","峰","岭","崖","峡","岗","嵩","峻","崇","幽","岳","屿","嶂","峭"]},
+    {char:"心",pinyin:"xīn",   answers:["心","想","思","忘","忙","快","慢","忍","忆","怕","悲","恨","念","志","忠","息"]},
+    {char:"土",pinyin:"tǔ",    answers:["土","地","坐","坏","块","坡","城","墙","填","坑","堆","基","坦","型","报","场"]},
+  ],
+  p4:[
+    {char:"攴",pinyin:"pū（反文旁）",answers:["故","救","教","政","收","敌","散","敢","数","改","放","败","攻","敏","致","整"]},
+    {char:"页",pinyin:"yè",    answers:["页","顶","项","顺","颜","题","颠","额","颊","顾","频","颈","颗","颤","颌","顿"]},
+    {char:"贝",pinyin:"bèi",   answers:["贝","贵","贸","赚","赔","财","购","赠","赋","资","贪","费","赏","贷","赞","账"]},
+    {char:"纟",pinyin:"sī（绞丝旁）",answers:["红","绿","细","绳","纸","线","织","绑","经","续","终","结","绕","给","纯","绚"]},
+    {char:"火",pinyin:"huǒ",   answers:["火","炎","烧","炉","灯","灰","烟","炸","燃","焰","热","煮","炒","烤","煎","灼"]},
+    {char:"雨",pinyin:"yǔ",    answers:["雨","雪","雷","霜","霞","露","雾","霓","零","霸","霍","霎","霏","霾","雹","霈"]},
+    {char:"鸟",pinyin:"niǎo",  answers:["鸟","鸡","鸭","鹅","鸽","鸦","鹤","鹰","鹦","鸵","鸮","鸬","鹃","鹊","鸥","鹕"]},
+    {char:"鱼",pinyin:"yú",    answers:["鱼","鲜","鲤","鲫","鲸","鲨","鳗","鳟","鳝","鲶","鲍","鲳","鲈","鲻","鲂","鳄"]},
+  ],
+  p5:[
+    {char:"走",pinyin:"zǒu",   answers:["走","赶","越","超","趋","趣","赴","起","趁","赵","趟","趴","趿","趾","赳"]},
+    {char:"食",pinyin:"shí（食字旁）",answers:["食","饭","饮","餐","饿","饱","饺","馒","饼","馆","馅","饲","饥","饷","馈","饴"]},
+    {char:"示",pinyin:"shì",   answers:["示","社","祖","祝","神","祥","福","禄","祈","礼","禅","禁","祸","票","祭","视"]},
+    {char:"竹",pinyin:"zhú",   answers:["竹","笔","等","答","算","管","简","篮","筷","箱","筒","笼","篇","节","竿","笛"]},
+    {char:"言",pinyin:"yán",   answers:["言","话","语","说","读","谢","请","诗","词","讲","论","评","记","识","试","误"]},
+    {char:"目",pinyin:"mù",    answers:["目","看","眼","眉","睛","盲","瞳","眺","睡","眨","瞪","盼","睦","睁","睬","瞥"]},
+    {char:"糸",pinyin:"mì（糸字旁）",answers:["系","素","累","紫","索","紧","繁","纵","絮","紊","绵","缠","缀","缕","缘","缚"]},
+    {char:"页",pinyin:"yè",    answers:["页","顶","项","顺","颜","题","颠","额","颊","顾","频","颈","颗","颤","颌","顿"]},
+  ],
+  p6:[
+    {char:"王",pinyin:"wáng（王字旁）",answers:["王","玉","玩","现","珍","玻","珠","璃","环","班","理","球","琴","瑞","瑶","璧"]},
+    {char:"月",pinyin:"yuè（肉月旁）",answers:["月","明","期","朗","朝","望","腊","胖","脸","胸","腿","背","脑","膀","腰","臂"]},
+    {char:"口",pinyin:"kǒu",   answers:["口","吃","喝","叫","唱","啊","嘴","吐","喊","名","回","只","叹","吹","呼","嗯"]},
+    {char:"力",pinyin:"lì",    answers:["力","劲","助","努","动","功","勤","劳","励","效","勇","勋","勉","劈","勃","勒"]},
+    {char:"攴",pinyin:"pū（反文旁）",answers:["故","救","教","政","收","敌","散","敢","数","改","放","败","攻","敏","致","整"]},
+    {char:"贝",pinyin:"bèi",   answers:["贝","贵","贸","赚","赔","财","购","赠","赋","资","贪","费","赏","贷","赞","账"]},
+    {char:"雨",pinyin:"yǔ",    answers:["雨","雪","雷","霜","霞","露","雾","霓","零","霸","霍","霎","霏","霾","雹","霈"]},
+    {char:"纟",pinyin:"sī（绞丝旁）",answers:["红","绿","细","绳","纸","线","织","绑","经","续","终","结","绕","给","纯","绚"]},
+  ],
+  m1:[
+    {char:"氵",pinyin:"shuǐ（三点水）",answers:["河","海","泳","泡","泥","泉","洗","清","流","波","湖","漂","游","汗","汤","泪","渐","涉","渡","激"]},
+    {char:"讠",pinyin:"yán（言字旁）",answers:["话","语","说","读","谢","请","诗","词","讲","论","评","记","识","试","误","课","谈","询","谅","诺"]},
+    {char:"纟",pinyin:"sī（绞丝旁）",answers:["红","绿","细","绳","纸","线","织","绑","经","续","终","结","绕","给","纯","绚","缤","绮","缜","纤"]},
+    {char:"走",pinyin:"zǒu",   answers:["走","赶","越","超","趋","趣","赴","起","趁","赵","趟","趴","趿","趾","赳"]},
+    {char:"示",pinyin:"shì（示字旁）",answers:["示","社","祖","祝","神","祥","福","禄","祈","礼","禅","禁","祸","票","祭","视","祷","禀","祺","祀"]},
+    {char:"页",pinyin:"yè",    answers:["页","顶","项","顺","颜","题","颠","额","颊","顾","频","颈","颗","颤","颌","顿","颁","颇","颂","领"]},
+    {char:"斤",pinyin:"jīn",   answers:["斤","斧","斩","断","新","近","所","折","质","欣","诉","听","掰","斫","斥"]},
+    {char:"隹",pinyin:"zhuī",  answers:["隹","雀","雁","集","雕","雄","雌","难","雅","雏","准","谁","惟","唯","椎","维"]},
+  ],
+  m2:[
+    {char:"虍",pinyin:"hū（虎字头）",answers:["虎","虑","虚","虐","彪","虞","虏","号","虔","戏","剧","据","墟","嘘","谑"]},
+    {char:"酉",pinyin:"yǒu",   answers:["酒","醋","酿","醒","酸","酷","酵","醉","配","酌","酶","醚","醛","醢","酞","酤"]},
+    {char:"鬼",pinyin:"guǐ",   answers:["鬼","魂","魄","魅","魔","魁","魍","魉","嵬","傀","愧","瑰"]},
+    {char:"攴",pinyin:"pū（反文旁）",answers:["故","救","教","政","收","敌","散","敢","数","改","放","败","攻","敏","致","整","敕","敛","攸"]},
+    {char:"贝",pinyin:"bèi",   answers:["贝","贵","贸","赚","赔","财","购","赠","赋","资","贪","费","赏","贷","赞","账","赐","赎","贿","赂"]},
+    {char:"糸",pinyin:"mì",    answers:["系","素","累","紫","索","紧","繁","纵","絮","紊","绵","缠","缀","缕","缘","缚","缭","缰","缳"]},
+    {char:"臼",pinyin:"jiù",   answers:["臼","舅","臾","舂","兴","举","誉","舀","鼠","鼹","臿"]},
+    {char:"矢",pinyin:"shǐ",   answers:["矢","矩","矫","知","短","医","疑","雉","族","候","矮","矬","矻","矸","矱"]},
+  ],
+  m3:[
+    {char:"羊",pinyin:"yáng",  answers:["羊","群","美","善","羡","祥","翔","洋","痒","养","样","鲜","羞","差","羔","羹"]},
+    {char:"豕",pinyin:"shǐ（猪字头）",answers:["豕","家","猪","象","豪","逐","豹","貌","豢","豚","豨","豳","彘","豭","豜"]},
+    {char:"酉",pinyin:"yǒu",   answers:["酒","醋","酿","醒","酸","酷","酵","醉","配","酌","酶","醚","醛","醢","酞","酤"]},
+    {char:"隹",pinyin:"zhuī",  answers:["隹","雀","雁","集","雕","雄","雌","难","雅","雏","准","谁","惟","唯","椎","维"]},
+    {char:"鬼",pinyin:"guǐ",   answers:["鬼","魂","魄","魅","魔","魁","魍","魉","嵬","傀","愧","瑰"]},
+    {char:"龙",pinyin:"lóng",  answers:["龙","龚","庞","宠","聋","胧","栊","咙","砻","垄","笼","珑","茏","陇","垅","泷"]},
+    {char:"糸",pinyin:"mì",    answers:["系","素","累","紫","索","紧","繁","纵","絮","紊","绵","缠","缀","缕","缘","缚"]},
+    {char:"臼",pinyin:"jiù",   answers:["臼","舅","臾","舂","兴","举","誉","舀","鼠","鼹","臿"]},
+  ],
+  h1:[
+    {char:"卩",pinyin:"jié（单耳刀）",answers:["卩","即","既","卸","却","印","危","卷","卿","邮","令","卵","卦","叩"]},
+    {char:"臣",pinyin:"chén",  answers:["臣","卧","临","监","览","坚","紧","望","蓝","篮","婪","滥","揽","缆"]},
+    {char:"页",pinyin:"yè",    answers:["页","顶","项","顺","颜","题","颠","额","颊","顾","频","颈","颗","颤","颌","顿","颁","颇","颂","领"]},
+    {char:"斤",pinyin:"jīn",   answers:["斤","斧","斩","断","新","近","所","折","质","欣","诉","听","掰","斫","斥"]},
+    {char:"鸟",pinyin:"niǎo",  answers:["鸟","鸡","鸭","鹅","鸽","鸦","鹤","鹰","鹦","鸵","鸮","鸬","鹃","鹊","鸥","鹕"]},
+    {char:"虍",pinyin:"hū（虎字头）",answers:["虎","虑","虚","虐","彪","虞","虏","号","虔","戏","剧","据","墟","嘘","谑"]},
+    {char:"革",pinyin:"gé",    answers:["革","靴","鞋","鞭","靶","鞍","勒","靠","鞠","靡","鞑","靳","鞫","鞯","鞲","鞔"]},
+    {char:"骨",pinyin:"gǔ",    answers:["骨","体","骼","骸","髓","髋","骷","骶","骺","髌","髁","髀","骾","骻","骴","骱"]},
+  ],
+  h2:[
+    {char:"彡",pinyin:"shān（三撇旁）",answers:["彡","形","影","彩","须","彰","彻","彼","役","彷","彦","彬","彭","参","张"]},
+    {char:"殳",pinyin:"shū",   answers:["殳","段","殴","毁","投","没","设","役","股","殿","骰","鼓","穀","彀","毂"]},
+    {char:"囗",pinyin:"wéi（方框）",answers:["囗","国","图","园","围","圆","固","回","因","困","囚","圃","圈","囤","囱","囿"]},
+    {char:"臼",pinyin:"jiù",   answers:["臼","舅","臾","舂","兴","举","誉","舀","鼠","鼹","臿"]},
+    {char:"矢",pinyin:"shǐ",   answers:["矢","矩","矫","知","短","医","疑","雉","族","候","矮","矬","矻","矸"]},
+    {char:"鼎",pinyin:"dǐng",  answers:["鼎","鼐","鼒","鼏","鼑","鼓","鼙","鼗"]},
+    {char:"豕",pinyin:"shǐ",   answers:["豕","家","猪","象","豪","逐","豹","貌","豢","豚","豨","豳","彘","豭","豜"]},
+    {char:"髟",pinyin:"biāo（长发旁）",answers:["髟","鬓","髦","髻","鬟","鬃","鬈","髯","鬐","鬑","鬒","鬖","鬗","鬘","鬙","鬚"]},
+  ],
+  h3:[
+    {char:"龙",pinyin:"lóng",  answers:["龙","龚","庞","宠","聋","胧","栊","咙","砻","垄","笼","珑","茏","陇","垅","泷"]},
+    {char:"鬼",pinyin:"guǐ",   answers:["鬼","魂","魄","魅","魔","魁","魍","魉","嵬","傀","愧","瑰"]},
+    {char:"韦",pinyin:"wéi",   answers:["韦","违","围","韧","伟","纬","帏","闱","炜","玮","韶","韩","韪","韫","韬","讳"]},
+    {char:"革",pinyin:"gé",    answers:["革","靴","鞋","鞭","靶","鞍","勒","靠","鞠","靡","鞑","靳","鞫","鞯","鞲","鞔"]},
+    {char:"骨",pinyin:"gǔ",    answers:["骨","体","骼","骸","髓","髋","骷","骶","骺","髌","髁","髀","骾","骻","骴","骱"]},
+    {char:"髟",pinyin:"biāo（长发旁）",answers:["髟","鬓","髦","髻","鬟","鬃","鬈","髯","鬐","鬑","鬒","鬖","鬗","鬘","鬙","鬚"]},
+    {char:"鱼",pinyin:"yú",    answers:["鱼","鲜","鲤","鲫","鲸","鲨","鳗","鳟","鳝","鲶","鲍","鲳","鲈","鲻","鲂","鳄"]},
+    {char:"食",pinyin:"shí（食字旁）",answers:["食","饭","饮","餐","饿","饱","饺","馒","饼","馆","馅","饲","饥","饷","馈","饴"]},
+  ],
+  u1:[
+    {char:"黑",pinyin:"hēi",   answers:["黑","墨","默","黛","黯","黢","黝","黠","黧","黔","黟","黩","黻","黼","点"]},
+    {char:"鼠",pinyin:"shǔ",   answers:["鼠","鼬","鼹","鼯","鼱","鼷","鼩","鼫","窜","蹿","窳","窠","窣","窥"]},
+    {char:"韦",pinyin:"wéi",   answers:["韦","违","围","韧","伟","纬","帏","闱","炜","玮","韶","韩","韪","韫","韬","讳"]},
+    {char:"革",pinyin:"gé",    answers:["革","靴","鞋","鞭","靶","鞍","勒","靠","鞠","靡","鞑","靳","鞫","鞯","鞲","鞔"]},
+    {char:"骨",pinyin:"gǔ",    answers:["骨","体","骼","骸","髓","髋","骷","骶","骺","髌","髁","髀","骾","骻","骴","骱"]},
+    {char:"髟",pinyin:"biāo",  answers:["髟","鬓","髦","髻","鬟","鬃","鬈","髯","鬐","鬑","鬒","鬖","鬗","鬘","鬙","鬚"]},
+    {char:"鬲",pinyin:"lì",    answers:["鬲","隔","融","膈","槅","嗝","搁","镉","骼","阁","格","鬷","鬵","鬴","鬶","鬹"]},
+    {char:"龟",pinyin:"guī",   answers:["龟","鳖","鳗","鳄","鳢","鳞","鳍","鳟","鳣","鳤","鳡","鳠","鳜","鳙"]},
+  ],
+  u2:[
+    {char:"龍",pinyin:"lóng（繁）",answers:["龍","瓏","籠","朧","曨","矓","龐","聾","礱","壟","嚨","攏","寵","隴"]},
+    {char:"鳳",pinyin:"fèng（繁）",answers:["鳳","風","颱","颳","颼","飄","颻","颿","飂","飆","飇","飈","飋","飌"]},
+    {char:"鐵",pinyin:"tiě（繁）",answers:["鐵","鋼","銅","鋁","鋅","鎳","鉻","錳","鉬","鎢","鈦","鉑","鈀","銥","鋨","鈷"]},
+    {char:"學",pinyin:"xué（繁）",answers:["學","覺","覽","寬","堂","賞","嘗","鑒","監","鑑","盥","盤","臨"]},
+    {char:"愛",pinyin:"ài（繁）",answers:["愛","暖","媛","援","緩","爰","瑗","煖","嬡","嬈","嬋","嬝"]},
+    {char:"馬",pinyin:"mǎ（繁）",answers:["馬","騎","駕","驅","駐","騰","驕","驊","驚","駿","驥","驤","驃","驄","驂","驏","驍"]},
+    {char:"魚",pinyin:"yú（繁）",answers:["魚","鮮","鯉","鯽","鯨","鯊","鰻","鱒","鱔","鯰","鮑","鯧","鱸","鱻","鯁","鮫"]},
+    {char:"書",pinyin:"shū（繁）",answers:["書","畫","盡","晝","聿","肆","律","筆","建","廷","延","健","肄"]},
+  ],
+  u3:[
+    {char:"龘",pinyin:"dá",    answers:["龘","龙","腾","飞","升","霄","威","猛","势","盛","龚","龛","庞","垄","聋","宠"],hint:"三龙并行，气势磅礴"},
+    {char:"靐",pinyin:"bìng",  answers:["靐","雷","霆","电","闪","轰","鸣","震","声","响","霹","霍","雳","霰","霄","霏"],hint:"三雷叠加，声若惊雷"},
+    {char:"燚",pinyin:"yì",    answers:["燚","火","炎","焰","焱","燃","烧","光","灼","烈","炽","熔","熠","熹","煜"],hint:"四火叠加，烈焰滔天"},
+    {char:"淼",pinyin:"miǎo",  answers:["淼","水","海","洋","江","河","湖","波","浪","潮","汪","渺","澜","澎","澹","瀚"],hint:"三水，水势浩渺"},
+    {char:"森",pinyin:"sēn",   answers:["森","木","林","树","叶","枝","根","干","丛","茂","幽","深","棵","枯","梢","柏"],hint:"三木成森"},
+    {char:"磊",pinyin:"lěi",   answers:["磊","石","岩","碑","矿","砾","砂","岭","峰","峦","崖","壁","礁","砺","硕","砚"],hint:"三石，坦荡磊落"},
+    {char:"齉",pinyin:"nàng",  answers:["齉","鼻","塞","声","音","哑","浊","沉","重","闷","堵","涕","鼾","嗅","嗤","嗡"],hint:"笔画最多的常用字"},
+    {char:"爨",pinyin:"cuàn",  answers:["爨","灶","火","煮","炊","烹","蒸","焖","煲","炖","熬","炒","烤","焙","煨","炼"],hint:"古代灶台，烧火做饭"},
+  ],
+  u4:[
+    {char:"鬱",pinyin:"yù（繁）",answers:["鬱","悶","憂","愁","傷","抑","沉","積","結","懊","懣","惆","悵"],hint:"繁体郁，笔画极多"},
+    {char:"鑾",pinyin:"luán（繁）",answers:["鑾","鈴","銅","銀","玉","璧","寶","輦","駕","儀","御","宮","鏘","鐸","鐘","鑰"],hint:"皇帝车铃，繁体字"},
+    {char:"龥",pinyin:"yù",    answers:["龥","吁","呼","号","喊","叫","嚎","嘶","嗥","嚷","嗐","嗬","嗳","嗦","嗞","嗝"],hint:"呼号之意，极罕见字"},
+    {char:"齾",pinyin:"è",     answers:["齾","齿","牙","龈","龋","龌","龉","龊","龇","龆","龅","龄","龃","龂","龁","龀"],hint:"牙齿缺损貌"},
+    {char:"爩",pinyin:"yù",    answers:["爩","火","烟","焰","烽","烛","炬","灯","灼","炽","熠","熙","煦","煊","煌","熳"],hint:"烟火之意，罕见字"},
+    {char:"龖",pinyin:"dá",    answers:["龖","龙","飞","腾","升","霄","威","猛","势","盛","龚","龛","庞","垄","聋","宠"],hint:"双龙，飞腾之势"},
+    {char:"鱻",pinyin:"xiān",  answers:["鱻","鱼","鲜","腥","海","江","河","湖","钓","虾","蟹","贝","螺","蚌","蛤","鳖"],hint:"三鱼，极鲜之意"},
+    {char:"齉",pinyin:"nàng",  answers:["齉","鼻","塞","声","音","哑","浊","沉","重","闷","堵","涕","鼾","嗅","嗤","嗡"],hint:"终极难关"},
+  ],
 };
 
-// ════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════
 //  游戏状态
-// ════════════════════════════════════════════════════════════
-let G = {
-  grade: null,       // 当前难度键
-  level: 1,          // 关卡
-  qIndex: 0,
-  questions: [],
-  currentQ: null,
-  // 当前题网格中出现的答案字列表（用于答案提示）
-  gridAnswers: [],
-  foundSet: new Set(),// 本题已找到的字
-  total: 0,
-  score: 0,
-  timeLeft: 0,
-  timerID: null,
-  combo: 0,
-  comboTimer: null,
-  timeExpired: false,// 是否时间到（区别于主动跳过）
-  locked: false,     // 题目已结束锁定，防止重复触发跳题
+// ════════════════════════════════════════════════════════
+let G={
+  grade:null,level:1,qIndex:0,questions:[],currentQ:null,
+  gridAnswers:[],foundSet:new Set(),total:0,score:0,
+  timeLeft:0,timerID:null,combo:0,comboTimer:null,
+  timeExpired:false,locked:false,
 };
 
 // DOM
-const $score   = document.getElementById("score-val");
-const $timer   = document.getElementById("timer-val");
-const $found   = document.getElementById("found-val");
-const $qChar   = document.getElementById("question-char");
-const $qPinyin = document.getElementById("question-pinyin");
-const $grid    = document.getElementById("grid");
-const $bar     = document.getElementById("progress-bar");
-const $badge   = document.getElementById("level-badge");
-const $gBadge  = document.getElementById("grade-badge");
-const $overlay = document.getElementById("overlay");
-const $ansOv   = document.getElementById("answer-overlay");
-const $comboTip= document.getElementById("combo-tip");
-const $btnNext = document.getElementById("btn-next");
-const $btnSkip = document.getElementById("btn-skip");
-const $scGrade = document.getElementById("screen-grade");
+const $score   =document.getElementById("score-val");
+const $timer   =document.getElementById("timer-val");
+const $found   =document.getElementById("found-val");
+const $qChar   =document.getElementById("question-char");
+const $qPinyin =document.getElementById("question-pinyin");
+const $grid    =document.getElementById("grid");
+const $bar     =document.getElementById("progress-bar");
+const $badge   =document.getElementById("level-badge");
+const $gBadge  =document.getElementById("grade-badge");
+const $overlay =document.getElementById("overlay");
+const $ansOv   =document.getElementById("answer-overlay");
+const $comboTip=document.getElementById("combo-tip");
+const $btnNext =document.getElementById("btn-next");
+const $btnSkip =document.getElementById("btn-skip");
+const $scGrade =document.getElementById("screen-grade");
 
-// ════════════════════════════════════════════════════════════
-//  工具
-// ════════════════════════════════════════════════════════════
 function shuffle(arr){
   for(let i=arr.length-1;i>0;i--){
     const j=Math.floor(Math.random()*(i+1));
@@ -450,307 +572,241 @@ function shuffle(arr){
   return arr;
 }
 
-// ════════════════════════════════════════════════════════════
-//  难度选择
-// ════════════════════════════════════════════════════════════
+// ── 选关 ──
 document.querySelectorAll(".grade-btn").forEach(btn=>{
   btn.addEventListener("click",()=>{
-    const grade = btn.dataset.grade;
     $scGrade.style.display="none";
-    startGrade(grade);
+    startGrade(btn.dataset.grade);
   });
 });
-
 document.getElementById("title-back").addEventListener("click",()=>{
   clearInterval(G.timerID);
   $scGrade.style.display="flex";
 });
 
 function startGrade(grade){
-  G.grade  = grade;
-  G.level  = 1;
-  G.score  = 0;
-  const meta = GRADE_META[grade];
-  $gBadge.textContent = meta.icon + " " + meta.name;
+  G.grade=grade; G.level=1; G.score=0;
+  const meta=GRADE_META[grade];
+  $gBadge.textContent=meta.icon+" "+meta.name;
   initLevel();
 }
 
-// ════════════════════════════════════════════════════════════
-//  关卡 / 题目
-// ════════════════════════════════════════════════════════════
+// ── 关卡 ──
 function initLevel(){
-  const meta = GRADE_META[G.grade];
-  G.qIndex = 0;
-  const pool = GRADE_QUESTIONS[G.grade];
-  G.questions = shuffle([...pool]).slice(0, meta.levels + 1); // 每关题数
-  $badge.textContent = `第${G.level}关`;
+  const meta=GRADE_META[G.grade];
+  G.qIndex=0;
+  const pool=QDB[G.grade]||[];
+  G.questions=shuffle([...pool]).slice(0,meta.qCount);
+  $badge.textContent=`第${G.level}关`;
   updateScore();
   loadQuestion();
 }
 
 function loadQuestion(){
-  if(G.qIndex >= G.questions.length){ endLevel(); return; }
-  G.currentQ   = G.questions[G.qIndex];
-  G.foundSet   = new Set();
-  G.timeExpired = false;
-  G.locked      = false;  // 新题开始，解锁
-
-  $qChar.textContent   = G.currentQ.char;
-  $qPinyin.textContent = G.currentQ.pinyin || "";
+  if(G.qIndex>=G.questions.length){endLevel();return;}
+  G.currentQ=G.questions[G.qIndex];
+  G.foundSet=new Set();
+  G.timeExpired=false;
+  G.locked=false;
+  $qChar.textContent=G.currentQ.char;
+  $qPinyin.textContent=G.currentQ.pinyin||"";
   $qChar.style.animation="none"; void $qChar.offsetWidth; $qChar.style.animation="";
-
-  $btnNext.style.display = "none";
-  $btnSkip.style.display = "flex";
-
+  $btnNext.style.display="none";
+  $btnSkip.style.display="flex";
   buildGrid();
-
   clearInterval(G.timerID);
-  G.timeLeft = GRADE_META[G.grade].timePerQ;
-  G.combo    = 0;
+  G.timeLeft=GRADE_META[G.grade].timePerQ;
+  G.combo=0;
   updateTimer();
-  G.timerID = setInterval(tick, 1000);
+  G.timerID=setInterval(tick,1000);
 }
 
-// ── 构建网格 ──
+// ── 网格 ──
 function buildGrid(){
-  const meta   = GRADE_META[G.grade];
-  const cols   = meta.gridCols;
-  const rows   = meta.gridRows;
-  const total  = cols * rows;
-  const q      = G.currentQ;
-
-  // 答案字（在网格中实际放置的）
-  const ansArr  = shuffle([...q.answers]).slice(0, Math.floor(total * 0.42));
-  G.gridAnswers = ansArr; // 记录下来供答案提示用
-
-  // 干扰字
-  const poolStr = POOL[G.grade] || POOL.primary;
-  const poolArr = [...new Set(poolStr.split(""))].filter(c=>!q.answers.has(c));
-  const fillArr = shuffle(poolArr).slice(0, total - ansArr.length);
-
-  const cells = shuffle([...ansArr, ...fillArr]);
-
-  G.total = ansArr.length;
+  const meta=GRADE_META[G.grade];
+  const cols=meta.cols, rows=meta.rows, total=cols*rows;
+  const q=G.currentQ;
+  const ansArr=shuffle([...q.answers]).slice(0,Math.floor(total*0.40));
+  G.gridAnswers=ansArr;
+  const poolStr=POOL[G.grade]||POOL.p1;
+  const poolArr=[...new Set(poolStr.split(""))].filter(c=>!q.answers.includes(c));
+  const fillArr=shuffle(poolArr).slice(0,total-ansArr.length);
+  const cells=shuffle([...ansArr,...fillArr]);
+  G.total=ansArr.length;
   G.foundSet.clear();
   updateFound();
-
-  const fontSize = cols <= 4 ? 30 : cols <= 5 ? 26 : cols <= 6 ? 22 : 18;
-  $grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-  $grid.innerHTML = "";
-
+  const fontSize=cols<=4?30:cols<=5?26:cols<=6?22:18;
+  $grid.style.gridTemplateColumns=`repeat(${cols},1fr)`;
+  $grid.innerHTML="";
+  const ansSet=new Set(q.answers);
   cells.forEach(ch=>{
-    const div = document.createElement("div");
-    div.className = "cell";
-    div.textContent = ch;
-    div.dataset.char = ch;
-    div.dataset.isAnswer = q.answers.has(ch) ? "1" : "0";
-    div.style.fontSize = fontSize + "px";
-    div.addEventListener("click", onCellClick);
+    const div=document.createElement("div");
+    div.className="cell";
+    div.textContent=ch;
+    div.dataset.char=ch;
+    div.dataset.isAnswer=ansSet.has(ch)?"1":"0";
+    div.style.fontSize=fontSize+"px";
+    div.addEventListener("click",onCellClick);
     $grid.appendChild(div);
   });
 }
 
-// ════════════════════════════════════════════════════════════
-//  点击
-// ════════════════════════════════════════════════════════════
+// ── 点击 ──
 function onCellClick(e){
-  const cell = e.currentTarget;
-  // 锁定期间（时间到 / 全部找到的过渡期）拒绝所有点击
-  if(G.locked) return;
+  const cell=e.currentTarget;
+  if(G.locked)return;
   if(cell.classList.contains("found")||cell.classList.contains("correct")||
-     cell.classList.contains("wrong")) return;
-
+     cell.classList.contains("wrong"))return;
   if(cell.dataset.isAnswer==="1"){
     cell.classList.add("correct");
-    setTimeout(()=>cell.classList.add("found"), 400);
+    setTimeout(()=>cell.classList.add("found"),400);
     G.foundSet.add(cell.dataset.char);
     G.combo++;
-    const pts = 10 + (G.combo > 1 ? (G.combo-1)*5 : 0);
-    G.score += pts;
+    const pts=10+(G.combo>1?(G.combo-1)*5:0);
+    G.score+=pts;
     updateScore(); updateFound();
-    spawnFloat(e.clientX, e.clientY, "+"+pts, "#4CAF50");
+    spawnFloat(e.clientX,e.clientY,"+"+pts,"#4CAF50");
     showCombo();
-    if(G.foundSet.size >= G.total){
-      // 全部找到：锁定后延迟进下一题
-      G.locked = true;
+    if(G.foundSet.size>=G.total){
+      G.locked=true;
       clearInterval(G.timerID);
-      setTimeout(nextQuestion, 700);
+      setTimeout(nextQuestion,700);
     }
   } else {
     cell.classList.add("wrong");
-    setTimeout(()=>cell.classList.remove("wrong"), 350);
-    G.score = Math.max(0, G.score - 5);
-    G.combo = 0;
+    setTimeout(()=>cell.classList.remove("wrong"),350);
+    G.score=Math.max(0,G.score-5);
+    G.combo=0;
     updateScore();
-    spawnFloat(e.clientX, e.clientY, "-5", "#F44336");
+    spawnFloat(e.clientX,e.clientY,"-5","#F44336");
     hideCombo();
   }
 }
 
-// ════════════════════════════════════════════════════════════
-//  计时
-// ════════════════════════════════════════════════════════════
+// ── 计时 ──
 function tick(){
   G.timeLeft--;
   updateTimer();
-  if(G.timeLeft <= 0){
+  if(G.timeLeft<=0){
     clearInterval(G.timerID);
-    if(G.locked) return;  // 已经全部找到正在过渡，不再弹答案页
-    G.locked      = true;
-    G.timeExpired = true;
+    if(G.locked)return;
+    G.locked=true;
+    G.timeExpired=true;
     showAnswerOverlay();
   }
 }
 
-// ════════════════════════════════════════════════════════════
-//  时间到 → 显示答案弹窗（停留，等用户选择）
-// ════════════════════════════════════════════════════════════
 function showAnswerOverlay(){
-  const q = G.currentQ;
-
-  // 高亮网格中未找到的答案字
+  const q=G.currentQ;
   document.querySelectorAll(".cell").forEach(cell=>{
-    if(cell.dataset.isAnswer==="1" && !cell.classList.contains("found")){
+    if(cell.dataset.isAnswer==="1"&&!cell.classList.contains("found")){
       cell.classList.remove("correct","wrong");
       cell.classList.add("reveal");
     }
-    cell.style.pointerEvents = "none"; // 禁止再点击
+    cell.style.pointerEvents="none";
   });
-
-  // 填充弹窗内容
-  document.getElementById("ao-char").textContent   = q.char;
-  document.getElementById("ao-pinyin").textContent = q.pinyin || "";
-
-  // 判断完成情况
-  const ratio = G.foundSet.size / Math.max(G.total, 1);
-  if(ratio >= 0.8){
-    document.getElementById("ao-emoji").textContent = "⭐";
-    document.getElementById("ao-title").textContent = "差一点就全找到了！";
-  } else if(ratio >= 0.4){
-    document.getElementById("ao-emoji").textContent = "⏰";
-    document.getElementById("ao-title").textContent = "时间到，还有一些没找到";
+  document.getElementById("ao-char").textContent=q.char;
+  document.getElementById("ao-pinyin").textContent=q.pinyin||"";
+  const ratio=G.foundSet.size/Math.max(G.total,1);
+  if(ratio>=0.8){
+    document.getElementById("ao-emoji").textContent="⭐";
+    document.getElementById("ao-title").textContent="差一点就全找到了！";
+  } else if(ratio>=0.4){
+    document.getElementById("ao-emoji").textContent="⏰";
+    document.getElementById("ao-title").textContent="时间到，还有一些没找到";
   } else {
-    document.getElementById("ao-emoji").textContent = "💡";
-    document.getElementById("ao-title").textContent = "时间到！来看看正确答案";
+    document.getElementById("ao-emoji").textContent="💡";
+    document.getElementById("ao-title").textContent="时间到！来看看正确答案";
   }
-  document.getElementById("ao-sub").textContent =
+  document.getElementById("ao-sub").textContent=
     `已找到 ${G.foundSet.size} / ${G.total} 个，目标字是：`;
-
-  // 答案字列表
-  const $ac = document.getElementById("answer-chars");
-  $ac.innerHTML = "";
+  const $ac=document.getElementById("answer-chars");
+  $ac.innerHTML="";
   G.gridAnswers.forEach(ch=>{
-    const chip = document.createElement("div");
-    chip.className = "ans-chip" + (G.foundSet.has(ch) ? " found-chip" : "");
-    chip.textContent = ch;
+    const chip=document.createElement("div");
+    chip.className="ans-chip"+(G.foundSet.has(ch)?" found-chip":"");
+    chip.textContent=ch;
     $ac.appendChild(chip);
   });
-
   if(q.hint){
-    const hintEl = document.createElement("div");
-    hintEl.style.cssText = "font-size:12px;color:#bbb;margin-bottom:10px";
-    hintEl.textContent = "💡 " + q.hint;
+    const hintEl=document.createElement("div");
+    hintEl.style.cssText="font-size:12px;color:#bbb;margin-bottom:10px";
+    hintEl.textContent="💡 "+q.hint;
     $ac.after(hintEl);
   }
-
   $ansOv.classList.add("show");
 }
 
-// 答案页按钮
-document.getElementById("ao-retry").onclick = ()=>{
-  $ansOv.classList.remove("show");
-  // 重新加载同一题
-  loadQuestion();
+document.getElementById("ao-retry").onclick=()=>{
+  $ansOv.classList.remove("show"); loadQuestion();
 };
-document.getElementById("ao-next").onclick = ()=>{
-  $ansOv.classList.remove("show");
-  G.qIndex++;
-  loadQuestion();
+document.getElementById("ao-next").onclick=()=>{
+  $ansOv.classList.remove("show"); G.qIndex++; loadQuestion();
 };
 
-// ════════════════════════════════════════════════════════════
-//  主动跳过 / 手动下一题
-// ════════════════════════════════════════════════════════════
 function nextQuestion(){
   clearInterval(G.timerID);
-  G.locked = false;  // 解锁（由 nextQuestion 负责推进）
+  G.locked=false;
   G.qIndex++;
   loadQuestion();
 }
+$btnSkip.onclick=()=>{if(G.locked)return; G.locked=true; G.combo=0; clearInterval(G.timerID); nextQuestion();};
+$btnNext.onclick=()=>{if(G.locked)return; G.locked=true; G.combo=0; clearInterval(G.timerID); nextQuestion();};
 
-$btnSkip.onclick = ()=>{ if(G.locked) return; G.locked=true; G.combo=0; clearInterval(G.timerID); nextQuestion(); };
-$btnNext.onclick = ()=>{ if(G.locked) return; G.locked=true; G.combo=0; clearInterval(G.timerID); nextQuestion(); };
-
-// ════════════════════════════════════════════════════════════
-//  关卡结束
-// ════════════════════════════════════════════════════════════
+// ── 关卡结束 ──
 function endLevel(){
   clearInterval(G.timerID);
-  const totalQ    = G.questions.length;
-  const maxScore  = totalQ * 10 * 5; // 估算满分
-  const ratio     = G.score / Math.max(maxScore, 1);
-  const stars     = ratio>=0.8 ? "⭐⭐⭐" : ratio>=0.5 ? "⭐⭐" : "⭐";
-  const emojis    = ratio>=0.8 ? "🎉" : ratio>=0.5 ? "😊" : "💪";
-  const title     = ratio>=0.8 ? "太棒了！" : ratio>=0.5 ? "不错哦！" : "继续加油！";
-  const sub       = ratio>=0.8 ? "你认识好多字！" : ratio>=0.5 ? "再多练练就更厉害！" : "多认几遍就会啦～";
-  const meta      = GRADE_META[G.grade];
-  const maxLevel  = meta.levels;
-
-  document.getElementById("popup-emoji").textContent    = emojis;
-  document.getElementById("popup-title").textContent    = title;
-  document.getElementById("popup-subtitle").textContent = sub;
-  document.getElementById("popup-score").textContent    = G.score;
-  document.getElementById("popup-stars").textContent    = stars;
-
-  const nextBtn   = document.getElementById("popup-next");
-  const retryBtn  = document.getElementById("popup-retry");
-
-  if(G.level >= maxLevel){
-    nextBtn.textContent = "全部完成 🏆";
-    nextBtn.onclick = ()=>{ $overlay.classList.remove("show"); $scGrade.style.display="flex"; };
-  } else {
-    nextBtn.textContent = "下一关 ▶";
-    nextBtn.onclick = ()=>{ $overlay.classList.remove("show"); G.level++; initLevel(); };
-  }
-  retryBtn.onclick = ()=>{ $overlay.classList.remove("show"); initLevel(); };
-
+  const totalQ=G.questions.length;
+  const maxScore=totalQ*10*5;
+  const ratio=G.score/Math.max(maxScore,1);
+  const stars=ratio>=0.8?"⭐⭐⭐":ratio>=0.5?"⭐⭐":"⭐";
+  const emojis=ratio>=0.8?"🎉":ratio>=0.5?"😊":"💪";
+  const title=ratio>=0.8?"太棒了！":ratio>=0.5?"不错哦！":"继续加油！";
+  const sub=ratio>=0.8?"你认识好多字！":ratio>=0.5?"再多练练就更厉害！":"多认几遍就会啦～";
+  document.getElementById("popup-emoji").textContent=emojis;
+  document.getElementById("popup-title").textContent=title;
+  document.getElementById("popup-subtitle").textContent=sub;
+  document.getElementById("popup-score").textContent=G.score;
+  document.getElementById("popup-stars").textContent=stars;
+  const nextBtn=document.getElementById("popup-next");
+  const retryBtn=document.getElementById("popup-retry");
+  nextBtn.textContent="再挑一关 🏆";
+  nextBtn.onclick=()=>{$overlay.classList.remove("show"); $scGrade.style.display="flex";};
+  retryBtn.onclick=()=>{$overlay.classList.remove("show"); initLevel();};
   $overlay.classList.add("show");
 }
 
-// ════════════════════════════════════════════════════════════
-//  UI 更新
-// ════════════════════════════════════════════════════════════
-function updateScore(){ $score.textContent = G.score; }
-function updateFound() { $found.textContent = `${G.foundSet.size}/${G.total}`; }
+// ── UI ──
+function updateScore(){$score.textContent=G.score;}
+function updateFound(){$found.textContent=`${G.foundSet.size}/${G.total}`;}
 function updateTimer(){
-  $timer.textContent = G.timeLeft;
-  $timer.style.color = G.timeLeft <= 10 ? "#F44336" : "#E07B00";
-  const maxT = GRADE_META[G.grade].timePerQ;
-  $bar.style.width    = (G.timeLeft / maxT * 100) + "%";
-  $bar.style.background = G.timeLeft <= 10
-    ? "linear-gradient(90deg,#FF5722,#F44336)"
-    : "linear-gradient(90deg,#FFB800,#FF8C00)";
+  $timer.textContent=G.timeLeft;
+  $timer.style.color=G.timeLeft<=10?"#F44336":"#E07B00";
+  const maxT=GRADE_META[G.grade].timePerQ;
+  $bar.style.width=(G.timeLeft/maxT*100)+"%";
+  $bar.style.background=G.timeLeft<=10
+    ?"linear-gradient(90deg,#FF5722,#F44336)"
+    :"linear-gradient(90deg,#FFB800,#FF8C00)";
 }
-
-function spawnFloat(x, y, text, color){
-  const el = document.createElement("div");
-  el.className = "float-word";
-  el.textContent = text;
-  el.style.color = color;
-  el.style.left  = (x-20)+"px";
-  el.style.top   = (y-20)+"px";
+function spawnFloat(x,y,text,color){
+  const el=document.createElement("div");
+  el.className="float-word";
+  el.textContent=text;
+  el.style.color=color;
+  el.style.left=(x-20)+"px";
+  el.style.top=(y-20)+"px";
   document.body.appendChild(el);
   el.addEventListener("animationend",()=>el.remove());
 }
-
 function showCombo(){
-  if(G.combo < 2) return;
+  if(G.combo<2)return;
   clearTimeout(G.comboTimer);
-  $comboTip.textContent = `${G.combo} 连击！🔥`;
+  $comboTip.textContent=`${G.combo} 连击！🔥`;
   $comboTip.classList.add("show");
-  G.comboTimer = setTimeout(()=>$comboTip.classList.remove("show"), 1200);
+  G.comboTimer=setTimeout(()=>$comboTip.classList.remove("show"),1200);
 }
-function hideCombo(){ $comboTip.classList.remove("show"); }
+function hideCombo(){$comboTip.classList.remove("show");}
+
 </script>
 </body>
 </html>
