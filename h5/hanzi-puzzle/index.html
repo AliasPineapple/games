@@ -87,52 +87,71 @@
     @keyframes slotPop{0%{transform:scale(1.4)}100%{transform:scale(1)}}
 
     /* 计时进度条 */
-    #timer-wrap{padding:6px 14px;flex-shrink:0}
+    #timer-wrap{padding:4px 14px;flex-shrink:0}
     #timer-bar-bg{
       height:8px;background:rgba(255,255,255,.4);border-radius:4px;overflow:hidden;
     }
     #timer-bar{height:100%;background:#3B82F6;border-radius:4px;transition:width .5s linear,background .5s}
     #timer-text{font-size:11px;color:#64748B;text-align:right;margin-top:2px}
 
-    /* 方块堆叠区 */
+    /* ── 方块堆叠区（带边框的方框） ── */
+    #board-wrap{
+      flex:1;position:relative;overflow:hidden;
+      display:flex;align-items:center;justify-content:center;
+      padding:6px;
+    }
     #board{
-      flex:1;position:relative;overflow:hidden;margin:4px 0;
+      position:relative;
+      border:2.5px solid rgba(147,197,253,.7);
+      border-radius:16px;
+      background:rgba(255,255,255,.25);
+      overflow:hidden;
+      /* 宽高由 JS 动态设置 */
     }
 
     /* 方块 */
     .block{
       position:absolute;
-      width:58px;height:58px;
+      width:56px;height:56px;
       border-radius:12px;
       background:#fff;
       border:2px solid #BFDBFE;
       box-shadow:0 3px 8px rgba(0,0,0,.1);
       display:flex;align-items:center;justify-content:center;
-      font-size:26px;font-weight:800;color:#1E293B;
+      font-size:24px;font-weight:800;color:#1E293B;
       cursor:pointer;
-      transition:transform .08s;
-      will-change:transform;
-      /* 飘落动画由 JS 控制 top，用 transition */
+      will-change:transform,top;
     }
-    .block:active{transform:scale(.92)}
+    .block:active{transform:scale(.9)}
+    /* 遮挡超过70%才禁用 */
     .block.disabled{
-      opacity:.35;cursor:not-allowed;pointer-events:none;
+      opacity:.3;cursor:not-allowed;pointer-events:none;
     }
-    .block.correct{animation:blockFlyUp .4s ease-in forwards}
-    .block.wrong{animation:blockShake .35s ease-out}
 
-    @keyframes blockFlyUp{
-      0%{transform:scale(1.15);opacity:1}
-      100%{transform:scale(.3) translateY(-60px);opacity:0}
+    /* 正确：飞走消失 */
+    .block.anim-correct{
+      animation:flyUp .38s ease-in forwards;
+      pointer-events:none;
     }
-    @keyframes blockShake{
-      0%,100%{transform:translateX(0)}
-      20%{transform:translateX(-8px)}
-      40%{transform:translateX(8px)}
-      60%{transform:translateX(-6px)}
-      80%{transform:translateX(6px)}
+    @keyframes flyUp{
+      0%  {transform:scale(1.2);opacity:1}
+      60% {transform:scale(1.1) translateY(-30px);opacity:.8}
+      100%{transform:scale(.2) translateY(-80px);opacity:0}
     }
-    .block.wrong-flash{background:#FEE2E2;border-color:#EF4444}
+
+    /* 错误：抖动+红闪 */
+    .block.anim-wrong{
+      animation:shake .35s ease-out;
+      background:#FEE2E2 !important;
+      border-color:#EF4444 !important;
+    }
+    @keyframes shake{
+      0%,100%{transform:translateX(0) rotate(0)}
+      15%{transform:translateX(-7px) rotate(-2deg)}
+      35%{transform:translateX(7px) rotate(2deg)}
+      55%{transform:translateX(-5px) rotate(-1deg)}
+      75%{transform:translateX(5px) rotate(1deg)}
+    }
 
     /* 通关/失败遮罩 */
     .overlay{
@@ -160,30 +179,6 @@
     .ov-btn:active{transform:scale(.94)}
     .ov-btn.primary{background:#3B82F6;color:#fff}
     .ov-btn.secondary{background:#E2E8F0;color:#475569}
-
-    /* 新手引导 */
-    #guide-mask{
-      position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:150;
-      display:none;
-    }
-    #guide-mask.active{display:block}
-    #guide-tip{
-      position:fixed;bottom:0;left:0;right:0;
-      background:#fff;border-radius:20px 20px 0 0;
-      padding:20px 24px 32px;z-index:151;
-      transform:translateY(100%);transition:transform .3s;
-    }
-    #guide-tip.show{transform:translateY(0)}
-    #guide-tip-title{font-size:18px;font-weight:800;color:#1D4ED8;margin-bottom:8px}
-    #guide-tip-text{font-size:14px;color:#475569;line-height:1.6;margin-bottom:16px}
-    #guide-btn{
-      background:#3B82F6;color:#fff;border:none;border-radius:12px;
-      padding:12px 0;width:100%;font-size:16px;font-weight:700;cursor:pointer;
-    }
-    .block.guide-highlight{
-      box-shadow:0 0 0 4px #F59E0B,0 0 20px 6px rgba(245,158,11,.5) !important;
-      border-color:#F59E0B !important;z-index:152 !important;
-    }
   </style>
 </head>
 <body>
@@ -219,7 +214,10 @@
     <div id="timer-text">01:15</div>
   </div>
 
-  <div id="board"></div>
+  <!-- 方框区域 -->
+  <div id="board-wrap">
+    <div id="board"></div>
+  </div>
 </div>
 
 <!-- 通关遮罩 -->
@@ -247,14 +245,6 @@
   </div>
 </div>
 
-<!-- 新手引导 -->
-<div id="guide-mask"></div>
-<div id="guide-tip">
-  <div id="guide-tip-title"></div>
-  <div id="guide-tip-text"></div>
-  <button id="guide-btn"></button>
-</div>
-
 <script>
 // ══════════════════════════════════════════════
 // 1. 关卡数据
@@ -265,108 +255,118 @@ const RADICAL_MAP = {
   "氵": {
     "青":"清","可":"河","胡":"湖","木":"沐","曰":"汩",
     "方":null,"天":null,"心":null,"日":null,"土":null,
+    "石":null,"月":null,"马":null,"目":null,"口":null,
+    "斥":null,"少":null,"才":null,"生":null,"乔":null,
   },
   "木": {
     "目":"相","木":"林","口":"杏","乔":"桥","奉":"棒",
     "天":null,"石":null,"土":null,"心":null,"日":null,
+    "马":null,"月":null,"青":null,"方":null,"也":null,
+    "斥":null,"鸟":null,"少":null,"才":null,"成":null,
   },
   "口": {
     "天":"吞","鸟":"鸣","斥":"叱","马":"吗","牛":"哞",
     "月":null,"木":null,"土":null,"石":null,"山":null,
+    "青":null,"日":null,"心":null,"方":null,"目":null,
+    "少":null,"成":null,"才":null,"乔":null,"也":null,
   },
   "土": {
     "也":"地","方":"坊","才":"在","成":"城","匀":"均",
     "月":null,"天":null,"心":null,"青":null,"马":null,
+    "木":null,"日":null,"石":null,"山":null,"目":null,
+    "斥":null,"鸟":null,"少":null,"乔":null,"牛":null,
   },
   "日": {
     "月":"明","青":"晴","寸":"时","生":"星","京":"景",
     "土":null,"心":null,"木":null,"天":null,"马":null,
+    "方":null,"石":null,"山":null,"目":null,"也":null,
+    "才":null,"斥":null,"鸟":null,"少":null,"成":null,
   },
   "忄": {
     "青":"情","亡":"忘","生":"性","各":"恪","夬":"快",
     "天":null,"月":null,"木":null,"土":null,"马":null,
+    "方":null,"石":null,"心":null,"日":null,"目":null,
+    "才":null,"也":null,"成":null,"乔":null,"牛":null,
   },
   "火": {
     "丁":"灯","少":"炒","因":"烟","户":"炉","包":"炮",
     "山":null,"天":null,"土":null,"马":null,"月":null,
+    "木":null,"石":null,"心":null,"日":null,"方":null,
+    "目":null,"才":null,"青":null,"也":null,"成":null,
   },
   "亻": {
     "木":"休","门":"们","立":"位","尔":"你","也":"他",
     "天":null,"月":null,"土":null,"马":null,"心":null,
+    "方":null,"石":null,"日":null,"山":null,"目":null,
+    "青":null,"少":null,"才":null,"乔":null,"成":null,
   },
   "钅": {
     "叉":"钗","同":"铜","艮":"银","冈":"钢","者":"锗",
     "天":null,"月":null,"木":null,"马":null,"土":null,
+    "方":null,"石":null,"心":null,"日":null,"山":null,
+    "目":null,"青":null,"少":null,"才":null,"也":null,
   },
 };
 
 // 偏旁配色
 const RADICAL_STYLE = {
-  "氵": {bg:"#EFF6FF", border:"#93C5FD", blockBg:"#DBEAFE", targetBg:"linear-gradient(135deg,#3B82F6,#2563EB)", color:"#fff"},
-  "木": {bg:"#F0FDF4", border:"#86EFAC", blockBg:"#DCFCE7", targetBg:"linear-gradient(135deg,#16A34A,#15803D)", color:"#fff"},
-  "口": {bg:"#F5F3FF", border:"#C4B5FD", blockBg:"#EDE9FE", targetBg:"linear-gradient(135deg,#7C3AED,#6D28D9)", color:"#fff"},
-  "土": {bg:"#FEF3C7", border:"#FCD34D", blockBg:"#FEF9C3", targetBg:"linear-gradient(135deg,#D97706,#B45309)", color:"#fff"},
-  "日": {bg:"#FFF7ED", border:"#FED7AA", blockBg:"#FFEDD5", targetBg:"linear-gradient(135deg,#EA580C,#C2410C)", color:"#fff"},
-  "忄": {bg:"#FDF2F8", border:"#F9A8D4", blockBg:"#FCE7F3", targetBg:"linear-gradient(135deg,#DB2777,#BE185D)", color:"#fff"},
-  "火": {bg:"#FEF2F2", border:"#FCA5A5", blockBg:"#FEE2E2", targetBg:"linear-gradient(135deg,#EF4444,#DC2626)", color:"#fff"},
-  "亻": {bg:"#ECFEFF", border:"#67E8F9", blockBg:"#CFFAFE", targetBg:"linear-gradient(135deg,#0891B2,#0E7490)", color:"#fff"},
-  "钅": {bg:"#FFFBEB", border:"#FDE68A", blockBg:"#FEF3C7", targetBg:"linear-gradient(135deg,#D97706,#92400E)", color:"#fff"},
+  "氵": {bg:"#EFF6FF", border:"#93C5FD", blockBg:"#DBEAFE", targetBg:"linear-gradient(135deg,#3B82F6,#2563EB)", color:"#fff", accent:"#3B82F6"},
+  "木": {bg:"#F0FDF4", border:"#86EFAC", blockBg:"#DCFCE7", targetBg:"linear-gradient(135deg,#16A34A,#15803D)", color:"#fff", accent:"#16A34A"},
+  "口": {bg:"#F5F3FF", border:"#C4B5FD", blockBg:"#EDE9FE", targetBg:"linear-gradient(135deg,#7C3AED,#6D28D9)", color:"#fff", accent:"#7C3AED"},
+  "土": {bg:"#FEF3C7", border:"#FCD34D", blockBg:"#FEF9C3", targetBg:"linear-gradient(135deg,#D97706,#B45309)", color:"#fff", accent:"#D97706"},
+  "日": {bg:"#FFF7ED", border:"#FED7AA", blockBg:"#FFEDD5", targetBg:"linear-gradient(135deg,#EA580C,#C2410C)", color:"#fff", accent:"#EA580C"},
+  "忄": {bg:"#FDF2F8", border:"#F9A8D4", blockBg:"#FCE7F3", targetBg:"linear-gradient(135deg,#DB2777,#BE185D)", color:"#fff", accent:"#DB2777"},
+  "火": {bg:"#FEF2F2", border:"#FCA5A5", blockBg:"#FEE2E2", targetBg:"linear-gradient(135deg,#EF4444,#DC2626)", color:"#fff", accent:"#EF4444"},
+  "亻": {bg:"#ECFEFF", border:"#67E8F9", blockBg:"#CFFAFE", targetBg:"linear-gradient(135deg,#0891B2,#0E7490)", color:"#fff", accent:"#0891B2"},
+  "钅": {bg:"#FFFBEB", border:"#FDE68A", blockBg:"#FEF3C7", targetBg:"linear-gradient(135deg,#D97706,#92400E)", color:"#fff", accent:"#B45309"},
 };
 
-// 关卡配置
+// 关卡配置——pool 至少要有 25 个字根供堆叠展示
 const LEVELS = [
-  {id:"1-1", radical:"氵", radName:"水字旁", target:5, time:75,
-   pool:["青","可","胡","木","曰","方","天","心","日","土","石","月"]},
-  {id:"1-2", radical:"木", radName:"木字旁", target:5, time:75,
-   pool:["目","木","口","乔","奉","天","石","土","心","日","马","月"]},
-  {id:"1-3", radical:"口", radName:"口字旁", target:5, time:75,
-   pool:["天","鸟","斥","马","牛","月","木","土","石","山","青","日"]},
-  {id:"1-4", radical:"土", radName:"土字旁", target:5, time:75,
-   pool:["也","方","才","成","匀","月","天","心","青","马","木","日"]},
-  {id:"1-5", radical:"日", radName:"日字旁", target:5, time:75,
-   pool:["月","青","寸","生","京","土","心","木","天","马","方","石"]},
-  {id:"1-6", radical:"忄", radName:"心字旁", target:5, time:70,
-   pool:["青","亡","生","各","夬","天","月","木","土","马","方","石"]},
-  {id:"1-7", radical:"火", radName:"火字旁", target:5, time:70,
-   pool:["丁","少","因","户","包","山","天","土","马","月","木","石"]},
-  {id:"1-8", radical:"亻", radName:"人字旁", target:5, time:70,
-   pool:["木","门","立","尔","也","天","月","土","马","心","方","石"]},
-  {id:"1-9", radical:"钅", radName:"金字旁", target:5, time:70,
-   pool:["叉","同","艮","冈","者","天","月","木","马","土","方","石"]},
+  {id:"1-1", radical:"氵", radName:"水字旁", target:5, time:90,
+   pool:["青","可","胡","木","曰","方","天","心","日","土","石","月","马","目","口","斥","少","才","生","乔","鸟","成","也","牛","山"]},
+  {id:"1-2", radical:"木", radName:"木字旁", target:5, time:90,
+   pool:["目","木","口","乔","奉","天","石","土","心","日","马","月","青","方","也","斥","鸟","少","才","成","牛","山","匀","寸","亡"]},
+  {id:"1-3", radical:"口", radName:"口字旁", target:5, time:90,
+   pool:["天","鸟","斥","马","牛","月","木","土","石","山","青","日","心","方","目","少","成","才","乔","也","匀","寸","亡","丁","胡"]},
+  {id:"1-4", radical:"土", radName:"土字旁", target:5, time:90,
+   pool:["也","方","才","成","匀","月","天","心","青","马","木","日","石","山","目","斥","鸟","少","乔","牛","胡","寸","亡","京","夬"]},
+  {id:"1-5", radical:"日", radName:"日字旁", target:5, time:90,
+   pool:["月","青","寸","生","京","土","心","木","天","马","方","石","山","目","也","才","斥","鸟","少","成","匀","胡","亡","乔","牛"]},
+  {id:"1-6", radical:"忄", radName:"心字旁", target:5, time:85,
+   pool:["青","亡","生","各","夬","天","月","木","土","马","方","石","心","日","目","才","也","成","乔","牛","胡","寸","鸟","少","匀"]},
+  {id:"1-7", radical:"火", radName:"火字旁", target:5, time:85,
+   pool:["丁","少","因","户","包","山","天","土","马","月","木","石","心","日","方","目","才","青","也","成","胡","寸","鸟","匀","乔"]},
+  {id:"1-8", radical:"亻", radName:"人字旁", target:5, time:85,
+   pool:["木","门","立","尔","也","天","月","土","马","心","方","石","日","山","目","青","少","才","乔","成","胡","寸","鸟","匀","牛"]},
+  {id:"1-9", radical:"钅", radName:"金字旁", target:5, time:85,
+   pool:["叉","同","艮","冈","者","天","月","木","马","土","方","石","心","日","山","目","青","少","才","也","胡","寸","鸟","匀","成"]},
 ];
 
 // ══════════════════════════════════════════════
 // 2. 状态
 // ══════════════════════════════════════════════
-let currentLevel = null;   // LEVELS[i]
-let currentLevelIdx = 0;
-let blocks = [];            // DOM 方块数组
-let blockData = [];         // [{el, x, y, w, h, zIndex, radical, isCorrect, isClickable}]
-let foundCount = 0;
-let errorCount = 0;
-let timeLeft = 0;
-let totalTime = 0;
-let timerInterval = null;
-let gameOver = false;
-let resultSlots = [];       // 结果格子 DOM
-let guideStep = 0;          // 0=未引导 1..3
-let guideHighlightEl = null;
+const BLOCK_SIZE = 56;   // 方块像素尺寸
 
-// 存档：每关星级
-function saveStars(levelId, stars) {
-  const data = JSON.parse(localStorage.getItem("hzpuzzle_stars") || "{}");
-  if ((data[levelId] || 0) < stars) data[levelId] = stars;
-  localStorage.setItem("hzpuzzle_stars", JSON.stringify(data));
+let currentLevel    = null;
+let currentLevelIdx = 0;
+let blockData       = [];  // [{el, x, y, zIndex, radical, removed, isClickable}]
+let foundCount      = 0;
+let errorCount      = 0;
+let timeLeft        = 0;
+let totalTime       = 0;
+let timerInterval   = null;
+let gameOver        = false;
+let resultSlots     = [];
+
+// 存档
+function saveStars(id, stars) {
+  const d = JSON.parse(localStorage.getItem("hzpuzzle_stars") || "{}");
+  if ((d[id] || 0) < stars) d[id] = stars;
+  localStorage.setItem("hzpuzzle_stars", JSON.stringify(d));
 }
-function getStars(levelId) {
-  const data = JSON.parse(localStorage.getItem("hzpuzzle_stars") || "{}");
-  return data[levelId] || 0;
-}
-function hasGuided() {
-  return localStorage.getItem("hzpuzzle_guided") === "1";
-}
-function markGuided() {
-  localStorage.setItem("hzpuzzle_guided", "1");
+function getStars(id) {
+  return JSON.parse(localStorage.getItem("hzpuzzle_stars") || "{}")[id] || 0;
 }
 
 // ══════════════════════════════════════════════
@@ -377,30 +377,26 @@ function getAudioCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   return audioCtx;
 }
-function playTone(freq1, freq2, duration, type="sine", vol=0.25) {
+function playTone(f1, f2, dur, type="sine", vol=0.25) {
   try {
     const ctx = getAudioCtx();
     const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+    const g   = ctx.createGain();
     osc.type = type;
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.frequency.setValueAtTime(freq1, ctx.currentTime);
-    if (freq2 !== freq1) osc.frequency.exponentialRampToValueAtTime(freq2, ctx.currentTime + duration);
-    gain.gain.setValueAtTime(vol, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration + 0.05);
+    osc.connect(g); g.connect(ctx.destination);
+    osc.frequency.setValueAtTime(f1, ctx.currentTime);
+    if (f2 !== f1) osc.frequency.exponentialRampToValueAtTime(f2, ctx.currentTime + dur);
+    g.gain.setValueAtTime(vol, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur + 0.05);
     osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + duration + 0.06);
-  } catch(e) {}
+    osc.stop(ctx.currentTime + dur + 0.06);
+  } catch(e){}
 }
-function sfxCorrect() { playTone(440, 880, 0.15); }
-function sfxWrong()   { playTone(200, 100, 0.2, "sawtooth", 0.15); }
-function sfxWin()     {
-  [0, 0.18, 0.36].forEach((t, i) => {
-    setTimeout(() => playTone([523,659,784][i], [523,659,784][i], 0.15), t * 1000);
-  });
-}
-function sfxFail()    { playTone(300, 100, 0.5, "sine", 0.2); }
-function sfxTick()    { playTone(880, 880, 0.08, "sine", 0.12); }
+function sfxCorrect(){ playTone(440, 880, 0.15); }
+function sfxWrong()  { playTone(200, 100, 0.2, "sawtooth", 0.15); }
+function sfxWin()    { [523,659,784].forEach((f,i)=>setTimeout(()=>playTone(f,f,0.18),i*200)); }
+function sfxFail()   { playTone(300, 100, 0.5, "sine", 0.2); }
+function sfxTick()   { playTone(880, 880, 0.07, "sine", 0.1); }
 
 // ══════════════════════════════════════════════
 // 4. 关卡选择界面
@@ -410,19 +406,12 @@ function renderMenu() {
   grid.innerHTML = "";
   LEVELS.forEach((lv, idx) => {
     const stars = getStars(lv.id);
-    const style = RADICAL_STYLE[lv.radical];
+    const s = RADICAL_STYLE[lv.radical];
     const btn = document.createElement("div");
     btn.className = "level-btn";
     btn.innerHTML = `
       <div class="lnum">第 ${lv.id} 关</div>
-      <div class="lrad" style="color:${style.targetBg.includes('#3B82F6')?'#3B82F6':
-        style.targetBg.includes('#16A34A')?'#16A34A':
-        style.targetBg.includes('#7C3AED')?'#7C3AED':
-        style.targetBg.includes('#D97706')?'#D97706':
-        style.targetBg.includes('#EA580C')?'#EA580C':
-        style.targetBg.includes('#DB2777')?'#DB2777':
-        style.targetBg.includes('#EF4444')?'#EF4444':
-        style.targetBg.includes('#0891B2')?'#0891B2':'#D97706'}">${lv.radical}</div>
+      <div class="lrad" style="color:${s.accent}">${lv.radical}</div>
       <div class="lname">${lv.radName}</div>
       <div class="stars">${"★".repeat(stars)}${"☆".repeat(3-stars)}</div>
     `;
@@ -436,25 +425,22 @@ function renderMenu() {
 // ══════════════════════════════════════════════
 function startLevel(idx) {
   currentLevelIdx = idx;
-  currentLevel = LEVELS[idx];
-  foundCount = 0;
-  errorCount = 0;
-  gameOver = false;
-  guideStep = 0;
-  guideHighlightEl = null;
+  currentLevel    = LEVELS[idx];
+  foundCount      = 0;
+  errorCount      = 0;
+  gameOver        = false;
 
   // 切换界面
   document.getElementById("screen-menu").style.display = "none";
-  const sg = document.getElementById("screen-game");
-  sg.classList.add("active");
+  document.getElementById("screen-game").classList.add("active");
 
-  // 应用配色
+  // 配色
   applyStyle(currentLevel.radical);
 
   // 顶栏
   document.getElementById("level-label").textContent = `第 ${currentLevel.id} 关`;
-  document.getElementById("target-char").textContent = currentLevel.radical;
-  document.getElementById("target-name").textContent = currentLevel.radName;
+  document.getElementById("target-char").textContent  = currentLevel.radical;
+  document.getElementById("target-name").textContent  = currentLevel.radName;
   updateFoundLabel();
 
   // 结果格子
@@ -469,150 +455,224 @@ function startLevel(idx) {
   }
 
   // 计时
-  timeLeft = currentLevel.time;
+  timeLeft  = currentLevel.time;
   totalTime = currentLevel.time;
   updateTimerBar();
 
-  // 方块
-  buildBlocks();
-
-  // 计时器（引导期间先不启动）
+  // 生成方块（延迟一帧等 DOM 稳定）
   clearInterval(timerInterval);
-  if (!hasGuided() && idx === 0) {
-    startGuide();
-  } else {
+  setTimeout(() => {
+    buildBlocks();
     startTimer();
-  }
+  }, 60);
 }
 
 function applyStyle(radical) {
   const s = RADICAL_STYLE[radical];
   document.body.style.background = `linear-gradient(135deg,${s.bg},${s.blockBg})`;
   const tb = document.getElementById("target-block");
-  tb.style.background = s.targetBg;
-  tb.style.color = s.color;
-  tb.style.borderColor = "rgba(255,255,255,.4)";
+  tb.style.background   = s.targetBg;
+  tb.style.color        = s.color;
+  tb.style.borderColor  = "rgba(255,255,255,.4)";
   document.getElementById("timer-bar").style.background = s.targetBg;
+  document.getElementById("board").style.borderColor = s.border;
 }
 
 // ══════════════════════════════════════════════
-// 6. 方块生成 & 布局
+// 6. 方块生成 & 布局（方框内堆叠，至少3层）
 // ══════════════════════════════════════════════
-const BLOCK_SIZE = 58;
-
 function buildBlocks() {
-  const board = document.getElementById("board");
+  const board     = document.getElementById("board");
+  const boardWrap = document.getElementById("board-wrap");
   board.innerHTML = "";
-  blocks = [];
   blockData = [];
 
-  const boardW = board.clientWidth  || window.innerWidth;
-  const boardH = board.clientHeight || (window.innerHeight - 220);
+  // 计算方框尺寸：尽量撑满 board-wrap，留 6px padding
+  const wrapW = boardWrap.clientWidth  || window.innerWidth;
+  const wrapH = boardWrap.clientHeight || (window.innerHeight - 260);
+  const boardW = wrapW  - 12;
+  const boardH = wrapH  - 12;
+  board.style.width  = boardW + "px";
+  board.style.height = boardH + "px";
 
-  const pool = [...currentLevel.pool];
-  // 确保正确字根都在 pool 里（pool 已含，不重复添加）
-  const radMap = RADICAL_MAP[currentLevel.radical];
+  const pool    = [...currentLevel.pool];
+  const radMap  = RADICAL_MAP[currentLevel.radical];
+  const MARGIN  = 4;  // 方块距方框边缘最小距离
 
-  // 随机打乱
+  // 打乱顺序
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
 
-  const finalPool = pool.slice(0, Math.min(pool.length, 16));
+  // 目标：至少叠 3 层。用网格+随机偏移铺满方框。
+  // 先计算单层能放多少块
+  const cols     = Math.floor((boardW - MARGIN) / (BLOCK_SIZE - 8));  // -8 让块有重叠
+  const rows     = Math.floor((boardH - MARGIN) / (BLOCK_SIZE - 8));
+  const perLayer = cols * rows;
 
-  // 计算网格位置（带随机偏移，形成堆叠感）
-  const cols = 4;
-  const cellW = (boardW - 16) / cols;
-  const cellH = Math.min(cellW, 90);
-  const rows = Math.ceil(finalPool.length / cols);
+  // 我们要铺 pool.length 个块（25+），尽量保证 3 层以上密度
+  // 如果 pool 不够填 3 层，则重复 pool 补满（保持字根种类）
+  let positions = [];
+  for (let layer = 0; layer < 4; layer++) {   // 铺 4 层位置
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        // 网格基础位置 + 随机抖动
+        const bx = MARGIN + c * (BLOCK_SIZE - 8) + randInt(-6, 6);
+        const by = MARGIN + r * (BLOCK_SIZE - 8) + randInt(-6, 6);
+        // 限制在方框内
+        const x = clamp(bx, MARGIN, boardW - BLOCK_SIZE - MARGIN);
+        const y = clamp(by, MARGIN, boardH - BLOCK_SIZE - MARGIN);
+        positions.push({x, y, layer});
+      }
+    }
+  }
 
-  finalPool.forEach((radical, i) => {
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    // 目标落地位置（加随机偏移）
-    const targetX = 8 + col * cellW + (cellW - BLOCK_SIZE) / 2 + (Math.random() - .5) * 20;
-    const targetY = 8 + row * cellH + (Math.random() - .5) * 16;
-    const clampedX = Math.max(4, Math.min(boardW - BLOCK_SIZE - 4, targetX));
-    const clampedY = Math.max(4, Math.min(boardH - BLOCK_SIZE - 4, targetY));
-    const zIdx = Math.floor(Math.random() * 10) + (rows - row);  // 靠下的层级更高
+  // 打乱位置顺序
+  shuffle(positions);
+
+  // 取前 pool.length 个位置
+  const usedPos = positions.slice(0, pool.length);
+
+  // 按位置层数分配 z-index：layer 越大 z 越高（后放在上面）
+  usedPos.sort((a, b) => a.layer - b.layer);
+
+  usedPos.forEach((pos, i) => {
+    const radical   = pool[i % pool.length];
+    const isCorrect = !!radMap[radical];
+    const zIdx      = 10 + pos.layer * 5 + randInt(0, 4);
 
     const el = document.createElement("div");
     el.className = "block";
-    el.style.zIndex = zIdx;
-    el.style.left = clampedX + "px";
-    el.style.top = "-70px";  // 从顶部飘落
-    el.textContent = radical;
 
-    // 飘落动画：延迟后 transition 到目标位置
-    el.style.transition = "top .45s cubic-bezier(.22,.61,.36,1)";
-    const delay = 30 + i * 45;
-    setTimeout(() => { el.style.top = clampedY + "px"; }, delay);
+    // 飘落动画：从顶部 -BLOCK_SIZE 开始 transition 到目标位置
+    el.style.left    = pos.x + "px";
+    el.style.top     = (-BLOCK_SIZE - 10) + "px";
+    el.style.zIndex  = zIdx;
+    el.style.transition = `top .4s cubic-bezier(.22,.61,.36,1) ${i * 30}ms`;
+    el.textContent   = radical;
 
-    const isCorrect = !!radMap[radical];
-    el.addEventListener("click", () => onBlockClick(idx, el));
+    const bidx = blockData.length;
+    el._bidx = bidx;
+
+    // 点击事件——直接在 el 上闭包 bidx，不依赖外部变量
+    el.addEventListener("click", function(e) {
+      e.stopPropagation();
+      handleBlockClick(bidx);
+    });
 
     board.appendChild(el);
-    const idx2 = blockData.length;
-    el._bidx = idx2;
     blockData.push({
-      el, x: clampedX, y: clampedY,
+      el, x: pos.x, y: pos.y,
       w: BLOCK_SIZE, h: BLOCK_SIZE,
       zIndex: zIdx,
       radical, isCorrect,
-      isClickable: true, removed: false,
+      isClickable: true,
+      removed: false,
     });
-    blocks.push(el);
+
+    // 触发飘落
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.style.top = pos.y + "px";
+      });
+    });
   });
 
-  // 等飘落结束后计算遮挡
-  setTimeout(() => updateClickability(), 600);
+  // 等全部方块落地后计算遮挡
+  const maxDelay = pool.length * 30 + 500;
+  setTimeout(() => updateClickability(), maxDelay);
 }
 
-// 矩形重叠面积
-function overlapArea(a, b) {
+// 工具函数
+function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function clamp(v, lo, hi)  { return Math.max(lo, Math.min(hi, v)); }
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+// ══════════════════════════════════════════════
+// 7. 遮挡计算（关键修复：用实际 DOM top 值，union 合并）
+// ══════════════════════════════════════════════
+
+// 计算矩形交集面积
+function intersectArea(a, b) {
   const ox = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
   const oy = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
   return ox * oy;
 }
 
+// 计算"被多个矩形联合覆盖"的面积（扫描线法，避免重复计数）
+// 为简化，用像素采样法（精度足够）
+function coveredByUnion(target, coverList) {
+  if (coverList.length === 0) return 0;
+
+  // 仅对目标矩形内部像素采样，步长 8px
+  const STEP = 8;
+  let total   = 0;
+  let covered = 0;
+
+  for (let py = target.y + STEP / 2; py < target.y + target.h; py += STEP) {
+    for (let px = target.x + STEP / 2; px < target.x + target.w; px += STEP) {
+      total++;
+      // 检查该采样点是否被任意 cover 矩形覆盖
+      for (const c of coverList) {
+        if (px >= c.x && px < c.x + c.w && py >= c.y && py < c.y + c.h) {
+          covered++;
+          break;  // 联合：一个覆盖就算，不重复计
+        }
+      }
+    }
+  }
+
+  return covered / total;  // 返回覆盖比例 0~1
+}
+
 function updateClickability() {
-  const area = BLOCK_SIZE * BLOCK_SIZE;
+  // 先从 DOM 读取最新的实际位置（飘落结束后 top 已是目标值）
+  blockData.forEach(bd => {
+    if (bd.removed) return;
+    bd.y = parseFloat(bd.el.style.top) || bd.y;
+  });
+
   blockData.forEach((bd, i) => {
     if (bd.removed) return;
-    let covered = 0;
-    blockData.forEach((other, j) => {
-      if (i === j || other.removed || other.zIndex <= bd.zIndex) return;
-      covered += overlapArea(bd, other);
-    });
-    bd.isClickable = covered < area * 0.7;
+
+    // 收集所有比当前层 z-index 更高的、未移除的方块
+    const upperBlocks = blockData.filter((other, j) =>
+      j !== i && !other.removed && other.zIndex > bd.zIndex
+    );
+
+    const ratio = coveredByUnion(bd, upperBlocks);
+    bd.isClickable = ratio < 0.7;
     bd.el.classList.toggle("disabled", !bd.isClickable);
   });
 }
 
 // ══════════════════════════════════════════════
-// 7. 点击处理
+// 8. 点击处理（直接用 bidx，无闭包污染）
 // ══════════════════════════════════════════════
-function onBlockClick(idx, el) {
-  const bd = blockData[el._bidx];
+function handleBlockClick(bidx) {
+  const bd = blockData[bidx];
   if (!bd || bd.removed || !bd.isClickable || gameOver) return;
-  if (guideStep > 0 && el !== guideHighlightEl) return;  // 引导期间只能点高亮块
 
   if (bd.isCorrect) {
-    handleCorrect(bd);
+    doCorrect(bd);
   } else {
-    handleWrong(bd);
+    doWrong(bd);
   }
 }
 
-function handleCorrect(bd) {
+function doCorrect(bd) {
   sfxCorrect();
-  bd.removed = true;
-  bd.el.classList.add("correct");
+  bd.removed = true;                    // 立即标记，防止重复点击
+  bd.el.classList.add("anim-correct");
+  bd.el.style.pointerEvents = "none";
 
-  // 合成文字
-  const radMap = RADICAL_MAP[currentLevel.radical];
-  const hanzi = radMap[bd.radical];
+  const hanzi = RADICAL_MAP[currentLevel.radical][bd.radical];
 
   setTimeout(() => {
     bd.el.remove();
@@ -623,38 +683,45 @@ function handleCorrect(bd) {
     if (slot) {
       slot.textContent = hanzi;
       slot.classList.add("filled");
-      void slot.offsetWidth;
+      void slot.offsetWidth;              // 强制重排，触发动画
       slot.classList.add("pop");
       setTimeout(() => slot.classList.remove("pop"), 400);
     }
+
     foundCount++;
     updateFoundLabel();
 
     if (foundCount >= currentLevel.target) {
       setTimeout(() => triggerWin(), 300);
-    } else if (guideStep === 2) {
-      // 引导第2步完成，进入第3步
-      setTimeout(() => showGuideStep3(), 300);
     }
-  }, 380);
+  }, 400);
 }
 
-function handleWrong(bd) {
+function doWrong(bd) {
   sfxWrong();
   errorCount++;
-  bd.el.classList.add("wrong", "wrong-flash");
 
-  // 进度条闪红
-  const bar = document.getElementById("timer-bar");
-  bar.style.background = "#EF4444";
-  setTimeout(() => applyStyle(currentLevel.radical), 400);
-
-  // 扣时间
+  // 扣5秒
   timeLeft = Math.max(0, timeLeft - 5);
   updateTimerBar();
 
+  // 进度条闪红
+  const bar = document.getElementById("timer-bar");
+  bar.style.transition = "none";
+  bar.style.background = "#EF4444";
   setTimeout(() => {
-    bd.el.classList.remove("wrong", "wrong-flash");
+    bar.style.transition = "";
+    applyStyle(currentLevel.radical);
+  }, 400);
+
+  // 方块抖动动画
+  bd.el.classList.add("anim-wrong");
+  bd.el.style.pointerEvents = "none";    // 动画期间禁止重复点击
+  setTimeout(() => {
+    bd.el.classList.remove("anim-wrong");
+    bd.el.style.pointerEvents = "";
+    bd.el.style.background = "";
+    bd.el.style.borderColor = "";
   }, 380);
 }
 
@@ -664,7 +731,7 @@ function updateFoundLabel() {
 }
 
 // ══════════════════════════════════════════════
-// 8. 计时器
+// 9. 计时器
 // ══════════════════════════════════════════════
 function startTimer() {
   clearInterval(timerInterval);
@@ -687,7 +754,6 @@ function updateTimerBar() {
   const s = timeLeft % 60;
   document.getElementById("timer-text").textContent =
     `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
-  // 颜色随时间变化
   if (timeLeft <= 15) {
     document.getElementById("timer-bar").style.background = "#EF4444";
   } else if (timeLeft <= totalTime * 0.4) {
@@ -696,11 +762,11 @@ function updateTimerBar() {
 }
 
 // ══════════════════════════════════════════════
-// 9. 通关 / 失败
+// 10. 通关 / 失败
 // ══════════════════════════════════════════════
 function calcStars() {
-  if (errorCount === 0 && timeLeft > totalTime * 0.5) return 3;
-  if (errorCount <= 2 || timeLeft > totalTime * 0.2) return 2;
+  if (errorCount === 0 && timeLeft / totalTime > 0.5) return 3;
+  if (errorCount <= 2 && timeLeft > 0)                return 2;
   return 1;
 }
 
@@ -714,12 +780,11 @@ function triggerWin() {
   saveStars(currentLevel.id, stars);
 
   document.getElementById("win-stars").textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
-  document.getElementById("win-sub").textContent =
+  document.getElementById("win-sub").textContent   =
     `错误 ${errorCount} 次，剩余时间 ${timeLeft} 秒`;
 
   const hasNext = currentLevelIdx < LEVELS.length - 1;
-  document.getElementById("btn-win-next").style.display = hasNext ? "block" : "none";
-
+  document.getElementById("btn-win-next").style.display = hasNext ? "" : "none";
   showOverlay("overlay-win");
 }
 
@@ -727,22 +792,16 @@ function triggerFail() {
   if (gameOver) return;
   gameOver = true;
   sfxFail();
-
   document.getElementById("fail-sub").textContent =
     `已找到 ${foundCount} / ${currentLevel.target} 个，再试试！`;
   showOverlay("overlay-fail");
 }
 
-function showOverlay(id) {
-  document.getElementById(id).classList.add("show");
-}
-function hideOverlay(id) {
-  document.getElementById(id).classList.remove("show");
-}
+function showOverlay(id) { document.getElementById(id).classList.add("show"); }
+function hideOverlay(id) { document.getElementById(id).classList.remove("show"); }
 
 function goMenu() {
   clearInterval(timerInterval);
-  hideGuide();
   hideOverlay("overlay-win");
   hideOverlay("overlay-fail");
   document.getElementById("screen-game").classList.remove("active");
@@ -750,7 +809,7 @@ function goMenu() {
   renderMenu();
 }
 
-// 按钮
+// 按钮绑定
 document.getElementById("btn-back").addEventListener("click", goMenu);
 document.getElementById("btn-win-menu").addEventListener("click", goMenu);
 document.getElementById("btn-fail-menu").addEventListener("click", goMenu);
@@ -762,91 +821,6 @@ document.getElementById("btn-fail-retry").addEventListener("click", () => {
   hideOverlay("overlay-fail");
   startLevel(currentLevelIdx);
 });
-
-// ══════════════════════════════════════════════
-// 10. 新手引导
-// ══════════════════════════════════════════════
-function startGuide() {
-  if (hasGuided()) { startTimer(); return; }
-  guideStep = 1;
-  showGuideTip(
-    "这是目标偏旁：氵（水字旁）",
-    "找出能和「氵」组成汉字的字根，点击它！\n\n比如：氵 + 青 = 清",
-    "知道了",
-    () => showGuideStep2()
-  );
-}
-
-function showGuideStep2() {
-  guideStep = 2;
-  hideGuideTip();
-
-  // 高亮「青」字块（第一个正确字根）
-  const bd = blockData.find(b => b.radical === "青" && !b.removed);
-  if (!bd) { endGuide(); return; }
-  guideHighlightEl = bd.el;
-  bd.el.classList.add("guide-highlight");
-
-  // 显示蒙层
-  document.getElementById("guide-mask").classList.add("active");
-
-  showGuideTip(
-    "氵 + 青 = 清",
-    "点击高亮的方块试试！",
-    "先点「青」",
-    () => {}   // 等玩家自己点
-  );
-  // 也允许直接点按钮触发
-  document.getElementById("guide-btn").onclick = () => {
-    if (bd && !bd.removed) {
-      hideGuideTip();
-      bd.el.click();
-    }
-  };
-}
-
-function showGuideStep3() {
-  guideStep = 3;
-  if (guideHighlightEl) {
-    guideHighlightEl.classList.remove("guide-highlight");
-    guideHighlightEl = null;
-  }
-  document.getElementById("guide-mask").classList.remove("active");
-
-  showGuideTip(
-    "太棒了！氵 + 青 = 清",
-    `继续找，还需要 ${currentLevel.target - foundCount} 个！`,
-    "开始！",
-    () => endGuide()
-  );
-}
-
-function endGuide() {
-  guideStep = 0;
-  hideGuide();
-  markGuided();
-  startTimer();
-}
-
-function hideGuide() {
-  hideGuideTip();
-  document.getElementById("guide-mask").classList.remove("active");
-  if (guideHighlightEl) {
-    guideHighlightEl.classList.remove("guide-highlight");
-    guideHighlightEl = null;
-  }
-}
-
-function showGuideTip(title, text, btnText, cb) {
-  document.getElementById("guide-tip-title").textContent = title;
-  document.getElementById("guide-tip-text").textContent = text;
-  document.getElementById("guide-btn").textContent = btnText;
-  document.getElementById("guide-btn").onclick = () => { hideGuideTip(); cb(); };
-  document.getElementById("guide-tip").classList.add("show");
-}
-function hideGuideTip() {
-  document.getElementById("guide-tip").classList.remove("show");
-}
 
 // ══════════════════════════════════════════════
 // 11. 初始化
