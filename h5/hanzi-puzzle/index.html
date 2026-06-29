@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <title>汉字拼图消消乐</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{
+      font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+      background:linear-gradient(135deg,#EFF6FF 0%,#DBEAFE 100%);
+      min-height:100vh;overflow:hidden;user-select:none;
+    }
+
+    /* ── 关卡选择首屏 ── */
+    #screen-menu{
+      position:fixed;inset:0;background:linear-gradient(135deg,#EFF6FF,#BFDBFE);
+      display:flex;flex-direction:column;align-items:center;
+      z-index:200;padding:20px 16px;overflow-y:auto;
+    }
+    #screen-menu h1{font-size:26px;font-weight:800;color:#1D4ED8;margin:12px 0 4px;text-align:center}
+    #screen-menu .sub{font-size:13px;color:#93C5FD;margin-bottom:16px}
+    .level-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:380px}
+    .level-btn{
+      background:#fff;border:2px solid #BFDBFE;border-radius:14px;
+      padding:12px 8px;text-align:center;cursor:pointer;
+      transition:transform .15s,box-shadow .15s,border-color .15s;
+      box-shadow:0 2px 8px rgba(29,78,216,.08);
+    }
+    .level-btn:active{transform:scale(.94)}
+    .level-btn:hover{border-color:#3B82F6;box-shadow:0 4px 12px rgba(59,130,246,.22)}
+    .level-btn .lnum{font-size:13px;font-weight:700;color:#3B82F6}
+    .level-btn .lrad{font-size:28px;line-height:1.2}
+    .level-btn .lname{font-size:11px;color:#94A3B8;margin-top:2px}
+    .level-btn .stars{font-size:14px;min-height:18px;color:#F59E0B}
+
+    /* ── 游戏主界面 ── */
+    #screen-game{
+      position:fixed;inset:0;display:none;flex-direction:column;
+      background:linear-gradient(135deg,#EFF6FF 0%,#DBEAFE 100%);
+    }
+    #screen-game.active{display:flex}
+
+    /* 顶栏 */
+    #header{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:10px 14px 6px;flex-shrink:0;
+    }
+    #btn-back{
+      background:#fff;border:1.5px solid #BFDBFE;border-radius:10px;
+      padding:5px 12px;font-size:13px;color:#3B82F6;cursor:pointer;
+      font-weight:600;
+    }
+    #btn-back:active{transform:scale(.94)}
+    #level-label{font-size:14px;font-weight:700;color:#1D4ED8}
+
+    /* 目标偏旁区 */
+    #target-area{
+      display:flex;align-items:center;justify-content:center;
+      gap:12px;padding:6px 14px;flex-shrink:0;
+    }
+    #target-block{
+      width:64px;height:64px;border-radius:14px;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      font-weight:800;box-shadow:0 4px 12px rgba(0,0,0,.12);
+      border:2px solid rgba(255,255,255,.6);flex-shrink:0;
+    }
+    #target-char{font-size:30px;line-height:1}
+    #target-name{font-size:10px;margin-top:2px;opacity:.75}
+    #target-info{display:flex;flex-direction:column;gap:4px}
+    #found-label{font-size:13px;color:#1D4ED8;font-weight:600}
+
+    /* 结果格子 */
+    #result-row{
+      display:flex;gap:6px;padding:0 14px;flex-shrink:0;
+      flex-wrap:wrap;justify-content:center;
+    }
+    .result-slot{
+      width:44px;height:44px;border-radius:10px;
+      background:rgba(255,255,255,.5);border:2px dashed #93C5FD;
+      display:flex;align-items:center;justify-content:center;
+      font-size:22px;font-weight:700;color:#1D4ED8;
+      transition:transform .2s;
+    }
+    .result-slot.filled{background:#fff;border-style:solid;border-color:#3B82F6}
+    .result-slot.pop{animation:slotPop .3s ease-out}
+    @keyframes slotPop{0%{transform:scale(1.4)}100%{transform:scale(1)}}
+
+    /* 计时进度条 */
+    #timer-wrap{padding:6px 14px;flex-shrink:0}
+    #timer-bar-bg{
+      height:8px;background:rgba(255,255,255,.4);border-radius:4px;overflow:hidden;
+    }
+    #timer-bar{height:100%;background:#3B82F6;border-radius:4px;transition:width .5s linear,background .5s}
+    #timer-text{font-size:11px;color:#64748B;text-align:right;margin-top:2px}
+
+    /* 方块堆叠区 */
+    #board{
+      flex:1;position:relative;overflow:hidden;margin:4px 0;
+    }
+
+    /* 方块 */
+    .block{
+      position:absolute;
+      width:58px;height:58px;
+      border-radius:12px;
+      background:#fff;
+      border:2px solid #BFDBFE;
+      box-shadow:0 3px 8px rgba(0,0,0,.1);
+      display:flex;align-items:center;justify-content:center;
+      font-size:26px;font-weight:800;color:#1E293B;
+      cursor:pointer;
+      transition:transform .08s;
+      will-change:transform;
+      /* 飘落动画由 JS 控制 top，用 transition */
+    }
+    .block:active{transform:scale(.92)}
+    .block.disabled{
+      opacity:.35;cursor:not-allowed;pointer-events:none;
+    }
+    .block.correct{animation:blockFlyUp .4s ease-in forwards}
+    .block.wrong{animation:blockShake .35s ease-out}
+
+    @keyframes blockFlyUp{
+      0%{transform:scale(1.15);opacity:1}
+      100%{transform:scale(.3) translateY(-60px);opacity:0}
+    }
+    @keyframes blockShake{
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-8px)}
+      40%{transform:translateX(8px)}
+      60%{transform:translateX(-6px)}
+      80%{transform:translateX(6px)}
+    }
+    .block.wrong-flash{background:#FEE2E2;border-color:#EF4444}
+
+    /* 通关/失败遮罩 */
+    .overlay{
+      position:fixed;inset:0;background:rgba(0,0,0,.5);
+      display:flex;align-items:center;justify-content:center;
+      z-index:100;opacity:0;pointer-events:none;
+      transition:opacity .3s;
+    }
+    .overlay.show{opacity:1;pointer-events:all}
+    .overlay-box{
+      background:#fff;border-radius:24px;padding:28px 32px;
+      text-align:center;width:88%;max-width:320px;
+      box-shadow:0 12px 40px rgba(0,0,0,.2);
+      transform:scale(.85);transition:transform .3s;
+    }
+    .overlay.show .overlay-box{transform:scale(1)}
+    .overlay-title{font-size:24px;font-weight:800;margin-bottom:8px}
+    .overlay-sub{font-size:14px;color:#64748B;margin-bottom:16px}
+    .star-row{font-size:36px;margin-bottom:16px;letter-spacing:4px}
+    .ov-btns{display:flex;gap:10px;justify-content:center}
+    .ov-btn{
+      padding:10px 24px;border-radius:12px;font-size:15px;font-weight:700;
+      cursor:pointer;border:none;transition:transform .12s;
+    }
+    .ov-btn:active{transform:scale(.94)}
+    .ov-btn.primary{background:#3B82F6;color:#fff}
+    .ov-btn.secondary{background:#E2E8F0;color:#475569}
+
+    /* 新手引导 */
+    #guide-mask{
+      position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:150;
+      display:none;
+    }
+    #guide-mask.active{display:block}
+    #guide-tip{
+      position:fixed;bottom:0;left:0;right:0;
+      background:#fff;border-radius:20px 20px 0 0;
+      padding:20px 24px 32px;z-index:151;
+      transform:translateY(100%);transition:transform .3s;
+    }
+    #guide-tip.show{transform:translateY(0)}
+    #guide-tip-title{font-size:18px;font-weight:800;color:#1D4ED8;margin-bottom:8px}
+    #guide-tip-text{font-size:14px;color:#475569;line-height:1.6;margin-bottom:16px}
+    #guide-btn{
+      background:#3B82F6;color:#fff;border:none;border-radius:12px;
+      padding:12px 0;width:100%;font-size:16px;font-weight:700;cursor:pointer;
+    }
+    .block.guide-highlight{
+      box-shadow:0 0 0 4px #F59E0B,0 0 20px 6px rgba(245,158,11,.5) !important;
+      border-color:#F59E0B !important;z-index:152 !important;
+    }
+  </style>
+</head>
+<body>
+
+<!-- 关卡选择首屏 -->
+<div id="screen-menu">
+  <h1>汉字拼图消消乐</h1>
+  <p class="sub">点击偏旁方块，组成汉字！</p>
+  <div class="level-grid" id="level-grid"></div>
+</div>
+
+<!-- 游戏主界面 -->
+<div id="screen-game">
+  <div id="header">
+    <button id="btn-back">返回</button>
+    <span id="level-label">第 1-1 关</span>
+    <span style="width:52px"></span>
+  </div>
+
+  <div id="target-area">
+    <div id="target-block">
+      <span id="target-char">氵</span>
+      <span id="target-name">水字旁</span>
+    </div>
+    <div id="target-info">
+      <div id="found-label">已找到 0 / 5</div>
+      <div id="result-row"></div>
+    </div>
+  </div>
+
+  <div id="timer-wrap">
+    <div id="timer-bar-bg"><div id="timer-bar"></div></div>
+    <div id="timer-text">01:15</div>
+  </div>
+
+  <div id="board"></div>
+</div>
+
+<!-- 通关遮罩 -->
+<div class="overlay" id="overlay-win">
+  <div class="overlay-box">
+    <div class="overlay-title" style="color:#F59E0B">通关！</div>
+    <div class="star-row" id="win-stars"></div>
+    <div class="overlay-sub" id="win-sub"></div>
+    <div class="ov-btns">
+      <button class="ov-btn secondary" id="btn-win-menu">关卡选择</button>
+      <button class="ov-btn primary" id="btn-win-next">下一关</button>
+    </div>
+  </div>
+</div>
+
+<!-- 失败遮罩 -->
+<div class="overlay" id="overlay-fail">
+  <div class="overlay-box">
+    <div class="overlay-title" style="color:#EF4444">时间到！</div>
+    <div class="overlay-sub" id="fail-sub"></div>
+    <div class="ov-btns">
+      <button class="ov-btn secondary" id="btn-fail-menu">关卡选择</button>
+      <button class="ov-btn primary" id="btn-fail-retry">重试</button>
+    </div>
+  </div>
+</div>
+
+<!-- 新手引导 -->
+<div id="guide-mask"></div>
+<div id="guide-tip">
+  <div id="guide-tip-title"></div>
+  <div id="guide-tip-text"></div>
+  <button id="guide-btn"></button>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// 1. 关卡数据
+// ══════════════════════════════════════════════
+
+// RADICAL_MAP[目标偏旁][字根] = 合成汉字（null 表示干扰项）
+const RADICAL_MAP = {
+  "氵": {
+    "青":"清","可":"河","胡":"湖","木":"沐","曰":"汩",
+    "方":null,"天":null,"心":null,"日":null,"土":null,
+  },
+  "木": {
+    "目":"相","木":"林","口":"杏","乔":"桥","奉":"棒",
+    "天":null,"石":null,"土":null,"心":null,"日":null,
+  },
+  "口": {
+    "天":"吞","鸟":"鸣","斥":"叱","马":"吗","牛":"哞",
+    "月":null,"木":null,"土":null,"石":null,"山":null,
+  },
+  "土": {
+    "也":"地","方":"坊","才":"在","成":"城","匀":"均",
+    "月":null,"天":null,"心":null,"青":null,"马":null,
+  },
+  "日": {
+    "月":"明","青":"晴","寸":"时","生":"星","京":"景",
+    "土":null,"心":null,"木":null,"天":null,"马":null,
+  },
+  "忄": {
+    "青":"情","亡":"忘","生":"性","各":"恪","夬":"快",
+    "天":null,"月":null,"木":null,"土":null,"马":null,
+  },
+  "火": {
+    "丁":"灯","少":"炒","因":"烟","户":"炉","包":"炮",
+    "山":null,"天":null,"土":null,"马":null,"月":null,
+  },
+  "亻": {
+    "木":"休","门":"们","立":"位","尔":"你","也":"他",
+    "天":null,"月":null,"土":null,"马":null,"心":null,
+  },
+  "钅": {
+    "叉":"钗","同":"铜","艮":"银","冈":"钢","者":"锗",
+    "天":null,"月":null,"木":null,"马":null,"土":null,
+  },
+};
+
+// 偏旁配色
+const RADICAL_STYLE = {
+  "氵": {bg:"#EFF6FF", border:"#93C5FD", blockBg:"#DBEAFE", targetBg:"linear-gradient(135deg,#3B82F6,#2563EB)", color:"#fff"},
+  "木": {bg:"#F0FDF4", border:"#86EFAC", blockBg:"#DCFCE7", targetBg:"linear-gradient(135deg,#16A34A,#15803D)", color:"#fff"},
+  "口": {bg:"#F5F3FF", border:"#C4B5FD", blockBg:"#EDE9FE", targetBg:"linear-gradient(135deg,#7C3AED,#6D28D9)", color:"#fff"},
+  "土": {bg:"#FEF3C7", border:"#FCD34D", blockBg:"#FEF9C3", targetBg:"linear-gradient(135deg,#D97706,#B45309)", color:"#fff"},
+  "日": {bg:"#FFF7ED", border:"#FED7AA", blockBg:"#FFEDD5", targetBg:"linear-gradient(135deg,#EA580C,#C2410C)", color:"#fff"},
+  "忄": {bg:"#FDF2F8", border:"#F9A8D4", blockBg:"#FCE7F3", targetBg:"linear-gradient(135deg,#DB2777,#BE185D)", color:"#fff"},
+  "火": {bg:"#FEF2F2", border:"#FCA5A5", blockBg:"#FEE2E2", targetBg:"linear-gradient(135deg,#EF4444,#DC2626)", color:"#fff"},
+  "亻": {bg:"#ECFEFF", border:"#67E8F9", blockBg:"#CFFAFE", targetBg:"linear-gradient(135deg,#0891B2,#0E7490)", color:"#fff"},
+  "钅": {bg:"#FFFBEB", border:"#FDE68A", blockBg:"#FEF3C7", targetBg:"linear-gradient(135deg,#D97706,#92400E)", color:"#fff"},
+};
+
+// 关卡配置
+const LEVELS = [
+  {id:"1-1", radical:"氵", radName:"水字旁", target:5, time:75,
+   pool:["青","可","胡","木","曰","方","天","心","日","土","石","月"]},
+  {id:"1-2", radical:"木", radName:"木字旁", target:5, time:75,
+   pool:["目","木","口","乔","奉","天","石","土","心","日","马","月"]},
+  {id:"1-3", radical:"口", radName:"口字旁", target:5, time:75,
+   pool:["天","鸟","斥","马","牛","月","木","土","石","山","青","日"]},
+  {id:"1-4", radical:"土", radName:"土字旁", target:5, time:75,
+   pool:["也","方","才","成","匀","月","天","心","青","马","木","日"]},
+  {id:"1-5", radical:"日", radName:"日字旁", target:5, time:75,
+   pool:["月","青","寸","生","京","土","心","木","天","马","方","石"]},
+  {id:"1-6", radical:"忄", radName:"心字旁", target:5, time:70,
+   pool:["青","亡","生","各","夬","天","月","木","土","马","方","石"]},
+  {id:"1-7", radical:"火", radName:"火字旁", target:5, time:70,
+   pool:["丁","少","因","户","包","山","天","土","马","月","木","石"]},
+  {id:"1-8", radical:"亻", radName:"人字旁", target:5, time:70,
+   pool:["木","门","立","尔","也","天","月","土","马","心","方","石"]},
+  {id:"1-9", radical:"钅", radName:"金字旁", target:5, time:70,
+   pool:["叉","同","艮","冈","者","天","月","木","马","土","方","石"]},
+];
+
+// ══════════════════════════════════════════════
+// 2. 状态
+// ══════════════════════════════════════════════
+let currentLevel = null;   // LEVELS[i]
+let currentLevelIdx = 0;
+let blocks = [];            // DOM 方块数组
+let blockData = [];         // [{el, x, y, w, h, zIndex, radical, isCorrect, isClickable}]
+let foundCount = 0;
+let errorCount = 0;
+let timeLeft = 0;
+let totalTime = 0;
+let timerInterval = null;
+let gameOver = false;
+let resultSlots = [];       // 结果格子 DOM
+let guideStep = 0;          // 0=未引导 1..3
+let guideHighlightEl = null;
+
+// 存档：每关星级
+function saveStars(levelId, stars) {
+  const data = JSON.parse(localStorage.getItem("hzpuzzle_stars") || "{}");
+  if ((data[levelId] || 0) < stars) data[levelId] = stars;
+  localStorage.setItem("hzpuzzle_stars", JSON.stringify(data));
+}
+function getStars(levelId) {
+  const data = JSON.parse(localStorage.getItem("hzpuzzle_stars") || "{}");
+  return data[levelId] || 0;
+}
+function hasGuided() {
+  return localStorage.getItem("hzpuzzle_guided") === "1";
+}
+function markGuided() {
+  localStorage.setItem("hzpuzzle_guided", "1");
+}
+
+// ══════════════════════════════════════════════
+// 3. 音效（Web Audio API）
+// ══════════════════════════════════════════════
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function playTone(freq1, freq2, duration, type="sine", vol=0.25) {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(freq1, ctx.currentTime);
+    if (freq2 !== freq1) osc.frequency.exponentialRampToValueAtTime(freq2, ctx.currentTime + duration);
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration + 0.05);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration + 0.06);
+  } catch(e) {}
+}
+function sfxCorrect() { playTone(440, 880, 0.15); }
+function sfxWrong()   { playTone(200, 100, 0.2, "sawtooth", 0.15); }
+function sfxWin()     {
+  [0, 0.18, 0.36].forEach((t, i) => {
+    setTimeout(() => playTone([523,659,784][i], [523,659,784][i], 0.15), t * 1000);
+  });
+}
+function sfxFail()    { playTone(300, 100, 0.5, "sine", 0.2); }
+function sfxTick()    { playTone(880, 880, 0.08, "sine", 0.12); }
+
+// ══════════════════════════════════════════════
+// 4. 关卡选择界面
+// ══════════════════════════════════════════════
+function renderMenu() {
+  const grid = document.getElementById("level-grid");
+  grid.innerHTML = "";
+  LEVELS.forEach((lv, idx) => {
+    const stars = getStars(lv.id);
+    const style = RADICAL_STYLE[lv.radical];
+    const btn = document.createElement("div");
+    btn.className = "level-btn";
+    btn.innerHTML = `
+      <div class="lnum">第 ${lv.id} 关</div>
+      <div class="lrad" style="color:${style.targetBg.includes('#3B82F6')?'#3B82F6':
+        style.targetBg.includes('#16A34A')?'#16A34A':
+        style.targetBg.includes('#7C3AED')?'#7C3AED':
+        style.targetBg.includes('#D97706')?'#D97706':
+        style.targetBg.includes('#EA580C')?'#EA580C':
+        style.targetBg.includes('#DB2777')?'#DB2777':
+        style.targetBg.includes('#EF4444')?'#EF4444':
+        style.targetBg.includes('#0891B2')?'#0891B2':'#D97706'}">${lv.radical}</div>
+      <div class="lname">${lv.radName}</div>
+      <div class="stars">${"★".repeat(stars)}${"☆".repeat(3-stars)}</div>
+    `;
+    btn.addEventListener("click", () => startLevel(idx));
+    grid.appendChild(btn);
+  });
+}
+
+// ══════════════════════════════════════════════
+// 5. 启动关卡
+// ══════════════════════════════════════════════
+function startLevel(idx) {
+  currentLevelIdx = idx;
+  currentLevel = LEVELS[idx];
+  foundCount = 0;
+  errorCount = 0;
+  gameOver = false;
+  guideStep = 0;
+  guideHighlightEl = null;
+
+  // 切换界面
+  document.getElementById("screen-menu").style.display = "none";
+  const sg = document.getElementById("screen-game");
+  sg.classList.add("active");
+
+  // 应用配色
+  applyStyle(currentLevel.radical);
+
+  // 顶栏
+  document.getElementById("level-label").textContent = `第 ${currentLevel.id} 关`;
+  document.getElementById("target-char").textContent = currentLevel.radical;
+  document.getElementById("target-name").textContent = currentLevel.radName;
+  updateFoundLabel();
+
+  // 结果格子
+  const rr = document.getElementById("result-row");
+  rr.innerHTML = "";
+  resultSlots = [];
+  for (let i = 0; i < currentLevel.target; i++) {
+    const slot = document.createElement("div");
+    slot.className = "result-slot";
+    rr.appendChild(slot);
+    resultSlots.push(slot);
+  }
+
+  // 计时
+  timeLeft = currentLevel.time;
+  totalTime = currentLevel.time;
+  updateTimerBar();
+
+  // 方块
+  buildBlocks();
+
+  // 计时器（引导期间先不启动）
+  clearInterval(timerInterval);
+  if (!hasGuided() && idx === 0) {
+    startGuide();
+  } else {
+    startTimer();
+  }
+}
+
+function applyStyle(radical) {
+  const s = RADICAL_STYLE[radical];
+  document.body.style.background = `linear-gradient(135deg,${s.bg},${s.blockBg})`;
+  const tb = document.getElementById("target-block");
+  tb.style.background = s.targetBg;
+  tb.style.color = s.color;
+  tb.style.borderColor = "rgba(255,255,255,.4)";
+  document.getElementById("timer-bar").style.background = s.targetBg;
+}
+
+// ══════════════════════════════════════════════
+// 6. 方块生成 & 布局
+// ══════════════════════════════════════════════
+const BLOCK_SIZE = 58;
+
+function buildBlocks() {
+  const board = document.getElementById("board");
+  board.innerHTML = "";
+  blocks = [];
+  blockData = [];
+
+  const boardW = board.clientWidth  || window.innerWidth;
+  const boardH = board.clientHeight || (window.innerHeight - 220);
+
+  const pool = [...currentLevel.pool];
+  // 确保正确字根都在 pool 里（pool 已含，不重复添加）
+  const radMap = RADICAL_MAP[currentLevel.radical];
+
+  // 随机打乱
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+
+  const finalPool = pool.slice(0, Math.min(pool.length, 16));
+
+  // 计算网格位置（带随机偏移，形成堆叠感）
+  const cols = 4;
+  const cellW = (boardW - 16) / cols;
+  const cellH = Math.min(cellW, 90);
+  const rows = Math.ceil(finalPool.length / cols);
+
+  finalPool.forEach((radical, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    // 目标落地位置（加随机偏移）
+    const targetX = 8 + col * cellW + (cellW - BLOCK_SIZE) / 2 + (Math.random() - .5) * 20;
+    const targetY = 8 + row * cellH + (Math.random() - .5) * 16;
+    const clampedX = Math.max(4, Math.min(boardW - BLOCK_SIZE - 4, targetX));
+    const clampedY = Math.max(4, Math.min(boardH - BLOCK_SIZE - 4, targetY));
+    const zIdx = Math.floor(Math.random() * 10) + (rows - row);  // 靠下的层级更高
+
+    const el = document.createElement("div");
+    el.className = "block";
+    el.style.zIndex = zIdx;
+    el.style.left = clampedX + "px";
+    el.style.top = "-70px";  // 从顶部飘落
+    el.textContent = radical;
+
+    // 飘落动画：延迟后 transition 到目标位置
+    el.style.transition = "top .45s cubic-bezier(.22,.61,.36,1)";
+    const delay = 30 + i * 45;
+    setTimeout(() => { el.style.top = clampedY + "px"; }, delay);
+
+    const isCorrect = !!radMap[radical];
+    el.addEventListener("click", () => onBlockClick(idx, el));
+
+    board.appendChild(el);
+    const idx2 = blockData.length;
+    el._bidx = idx2;
+    blockData.push({
+      el, x: clampedX, y: clampedY,
+      w: BLOCK_SIZE, h: BLOCK_SIZE,
+      zIndex: zIdx,
+      radical, isCorrect,
+      isClickable: true, removed: false,
+    });
+    blocks.push(el);
+  });
+
+  // 等飘落结束后计算遮挡
+  setTimeout(() => updateClickability(), 600);
+}
+
+// 矩形重叠面积
+function overlapArea(a, b) {
+  const ox = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
+  const oy = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+  return ox * oy;
+}
+
+function updateClickability() {
+  const area = BLOCK_SIZE * BLOCK_SIZE;
+  blockData.forEach((bd, i) => {
+    if (bd.removed) return;
+    let covered = 0;
+    blockData.forEach((other, j) => {
+      if (i === j || other.removed || other.zIndex <= bd.zIndex) return;
+      covered += overlapArea(bd, other);
+    });
+    bd.isClickable = covered < area * 0.7;
+    bd.el.classList.toggle("disabled", !bd.isClickable);
+  });
+}
+
+// ══════════════════════════════════════════════
+// 7. 点击处理
+// ══════════════════════════════════════════════
+function onBlockClick(idx, el) {
+  const bd = blockData[el._bidx];
+  if (!bd || bd.removed || !bd.isClickable || gameOver) return;
+  if (guideStep > 0 && el !== guideHighlightEl) return;  // 引导期间只能点高亮块
+
+  if (bd.isCorrect) {
+    handleCorrect(bd);
+  } else {
+    handleWrong(bd);
+  }
+}
+
+function handleCorrect(bd) {
+  sfxCorrect();
+  bd.removed = true;
+  bd.el.classList.add("correct");
+
+  // 合成文字
+  const radMap = RADICAL_MAP[currentLevel.radical];
+  const hanzi = radMap[bd.radical];
+
+  setTimeout(() => {
+    bd.el.remove();
+    updateClickability();
+
+    // 填入结果格子
+    const slot = resultSlots[foundCount];
+    if (slot) {
+      slot.textContent = hanzi;
+      slot.classList.add("filled");
+      void slot.offsetWidth;
+      slot.classList.add("pop");
+      setTimeout(() => slot.classList.remove("pop"), 400);
+    }
+    foundCount++;
+    updateFoundLabel();
+
+    if (foundCount >= currentLevel.target) {
+      setTimeout(() => triggerWin(), 300);
+    } else if (guideStep === 2) {
+      // 引导第2步完成，进入第3步
+      setTimeout(() => showGuideStep3(), 300);
+    }
+  }, 380);
+}
+
+function handleWrong(bd) {
+  sfxWrong();
+  errorCount++;
+  bd.el.classList.add("wrong", "wrong-flash");
+
+  // 进度条闪红
+  const bar = document.getElementById("timer-bar");
+  bar.style.background = "#EF4444";
+  setTimeout(() => applyStyle(currentLevel.radical), 400);
+
+  // 扣时间
+  timeLeft = Math.max(0, timeLeft - 5);
+  updateTimerBar();
+
+  setTimeout(() => {
+    bd.el.classList.remove("wrong", "wrong-flash");
+  }, 380);
+}
+
+function updateFoundLabel() {
+  document.getElementById("found-label").textContent =
+    `已找到 ${foundCount} / ${currentLevel.target}`;
+}
+
+// ══════════════════════════════════════════════
+// 8. 计时器
+// ══════════════════════════════════════════════
+function startTimer() {
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    if (gameOver) { clearInterval(timerInterval); return; }
+    timeLeft--;
+    if (timeLeft <= 15) sfxTick();
+    updateTimerBar();
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      triggerFail();
+    }
+  }, 1000);
+}
+
+function updateTimerBar() {
+  const pct = Math.max(0, timeLeft / totalTime) * 100;
+  document.getElementById("timer-bar").style.width = pct + "%";
+  const m = Math.floor(timeLeft / 60);
+  const s = timeLeft % 60;
+  document.getElementById("timer-text").textContent =
+    `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  // 颜色随时间变化
+  if (timeLeft <= 15) {
+    document.getElementById("timer-bar").style.background = "#EF4444";
+  } else if (timeLeft <= totalTime * 0.4) {
+    document.getElementById("timer-bar").style.background = "#F59E0B";
+  }
+}
+
+// ══════════════════════════════════════════════
+// 9. 通关 / 失败
+// ══════════════════════════════════════════════
+function calcStars() {
+  if (errorCount === 0 && timeLeft > totalTime * 0.5) return 3;
+  if (errorCount <= 2 || timeLeft > totalTime * 0.2) return 2;
+  return 1;
+}
+
+function triggerWin() {
+  if (gameOver) return;
+  gameOver = true;
+  clearInterval(timerInterval);
+  sfxWin();
+
+  const stars = calcStars();
+  saveStars(currentLevel.id, stars);
+
+  document.getElementById("win-stars").textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
+  document.getElementById("win-sub").textContent =
+    `错误 ${errorCount} 次，剩余时间 ${timeLeft} 秒`;
+
+  const hasNext = currentLevelIdx < LEVELS.length - 1;
+  document.getElementById("btn-win-next").style.display = hasNext ? "block" : "none";
+
+  showOverlay("overlay-win");
+}
+
+function triggerFail() {
+  if (gameOver) return;
+  gameOver = true;
+  sfxFail();
+
+  document.getElementById("fail-sub").textContent =
+    `已找到 ${foundCount} / ${currentLevel.target} 个，再试试！`;
+  showOverlay("overlay-fail");
+}
+
+function showOverlay(id) {
+  document.getElementById(id).classList.add("show");
+}
+function hideOverlay(id) {
+  document.getElementById(id).classList.remove("show");
+}
+
+function goMenu() {
+  clearInterval(timerInterval);
+  hideGuide();
+  hideOverlay("overlay-win");
+  hideOverlay("overlay-fail");
+  document.getElementById("screen-game").classList.remove("active");
+  document.getElementById("screen-menu").style.display = "";
+  renderMenu();
+}
+
+// 按钮
+document.getElementById("btn-back").addEventListener("click", goMenu);
+document.getElementById("btn-win-menu").addEventListener("click", goMenu);
+document.getElementById("btn-fail-menu").addEventListener("click", goMenu);
+document.getElementById("btn-win-next").addEventListener("click", () => {
+  hideOverlay("overlay-win");
+  startLevel(currentLevelIdx + 1);
+});
+document.getElementById("btn-fail-retry").addEventListener("click", () => {
+  hideOverlay("overlay-fail");
+  startLevel(currentLevelIdx);
+});
+
+// ══════════════════════════════════════════════
+// 10. 新手引导
+// ══════════════════════════════════════════════
+function startGuide() {
+  if (hasGuided()) { startTimer(); return; }
+  guideStep = 1;
+  showGuideTip(
+    "这是目标偏旁：氵（水字旁）",
+    "找出能和「氵」组成汉字的字根，点击它！\n\n比如：氵 + 青 = 清",
+    "知道了",
+    () => showGuideStep2()
+  );
+}
+
+function showGuideStep2() {
+  guideStep = 2;
+  hideGuideTip();
+
+  // 高亮「青」字块（第一个正确字根）
+  const bd = blockData.find(b => b.radical === "青" && !b.removed);
+  if (!bd) { endGuide(); return; }
+  guideHighlightEl = bd.el;
+  bd.el.classList.add("guide-highlight");
+
+  // 显示蒙层
+  document.getElementById("guide-mask").classList.add("active");
+
+  showGuideTip(
+    "氵 + 青 = 清",
+    "点击高亮的方块试试！",
+    "先点「青」",
+    () => {}   // 等玩家自己点
+  );
+  // 也允许直接点按钮触发
+  document.getElementById("guide-btn").onclick = () => {
+    if (bd && !bd.removed) {
+      hideGuideTip();
+      bd.el.click();
+    }
+  };
+}
+
+function showGuideStep3() {
+  guideStep = 3;
+  if (guideHighlightEl) {
+    guideHighlightEl.classList.remove("guide-highlight");
+    guideHighlightEl = null;
+  }
+  document.getElementById("guide-mask").classList.remove("active");
+
+  showGuideTip(
+    "太棒了！氵 + 青 = 清",
+    `继续找，还需要 ${currentLevel.target - foundCount} 个！`,
+    "开始！",
+    () => endGuide()
+  );
+}
+
+function endGuide() {
+  guideStep = 0;
+  hideGuide();
+  markGuided();
+  startTimer();
+}
+
+function hideGuide() {
+  hideGuideTip();
+  document.getElementById("guide-mask").classList.remove("active");
+  if (guideHighlightEl) {
+    guideHighlightEl.classList.remove("guide-highlight");
+    guideHighlightEl = null;
+  }
+}
+
+function showGuideTip(title, text, btnText, cb) {
+  document.getElementById("guide-tip-title").textContent = title;
+  document.getElementById("guide-tip-text").textContent = text;
+  document.getElementById("guide-btn").textContent = btnText;
+  document.getElementById("guide-btn").onclick = () => { hideGuideTip(); cb(); };
+  document.getElementById("guide-tip").classList.add("show");
+}
+function hideGuideTip() {
+  document.getElementById("guide-tip").classList.remove("show");
+}
+
+// ══════════════════════════════════════════════
+// 11. 初始化
+// ══════════════════════════════════════════════
+renderMenu();
+</script>
+</body>
+</html>
