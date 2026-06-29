@@ -96,9 +96,9 @@
 
     /* ── 方块堆叠区（带边框的方框） ── */
     #board-wrap{
-      flex:1;position:relative;overflow:hidden;
-      display:flex;align-items:center;justify-content:center;
-      padding:6px;
+      flex:1;position:relative;
+      padding:4px;
+      overflow:hidden;
     }
     #board{
       position:relative;
@@ -106,7 +106,7 @@
       border-radius:16px;
       background:rgba(255,255,255,.25);
       overflow:hidden;
-      /* 宽高由 JS 动态设置 */
+      /* 宽高由 JS 动态设置，等于 wrap - 8px */
     }
 
     /* 方块 */
@@ -488,15 +488,19 @@ function buildBlocks() {
   board.innerHTML = "";
   blockData = [];
 
-  // 计算方框尺寸：固定方块间距为 BLOCK_SIZE-14（大量重叠），
-  // 方框宽 = 4列 * 步距 + 边距，高度按比例
-  const STEP    = BLOCK_SIZE - 14;  // 42px，方块大量重叠
-  const NCOLS   = 4;
-  const NROWS   = 4;
-  const boardW  = NCOLS * STEP + BLOCK_SIZE + MARGIN * 2;  // 约 240px
-  const boardH  = NROWS * STEP + BLOCK_SIZE + MARGIN * 2;  // 约 240px
+  // 计算方框尺寸：撑满 board-wrap，然后用小步距让方块密集堆叠
+  const wrapW  = boardWrap.clientWidth  || window.innerWidth;
+  const wrapH  = boardWrap.clientHeight || Math.max(200, window.innerHeight - 270);
+  const boardW = Math.max(200, wrapW  - 8);
+  const boardH = Math.max(200, wrapH  - 8);
   board.style.width  = boardW + "px";
   board.style.height = boardH + "px";
+
+  // 步距：让 4 列方块铺满宽度并有大量重叠（密集感）
+  const NCOLS = 4;
+  const NROWS = 4;
+  const STEP  = Math.floor((boardW - MARGIN * 2 - BLOCK_SIZE) / (NCOLS - 1));
+  // STEP 约等于 (boardW - 60) / 3，确保4列方块横向铺满
 
   const pool    = [...currentLevel.pool];
   const radMap  = RADICAL_MAP[currentLevel.radical];
