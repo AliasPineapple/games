@@ -98,20 +98,21 @@
       transition:width .9s linear,background .5s;width:100%}
     #timer-text{font-size:10px;color:#64748B;text-align:right;margin-top:1px}
 
-    /* 方块堆叠区：flex:1 占满剩余空间，内部用 padding 控制方框边距 */
+    /* 方块堆叠区：flex:1 占满剩余空间，内部用 flex 居中方框 */
     #board-wrap{
       flex:1;min-height:0;
-      position:relative;
-      padding:6px;
+      display:flex;align-items:flex-start;justify-content:center;
+      padding:6px 8px;
+      overflow:hidden;
     }
-    /* board 撑满 board-wrap，absolute 定位 */
+    /* board 固定尺寸由 JS 设置，居中显示，不撑满 */
     #board{
-      position:absolute;
-      top:6px;left:6px;right:6px;bottom:6px;
+      position:relative;
       border:2.5px solid rgba(147,197,253,.7);
       border-radius:16px;
       background:rgba(255,255,255,.22);
       overflow:hidden;
+      flex-shrink:0;
     }
 
     /* 方块 */
@@ -254,7 +255,7 @@
 // 关卡数据
 // ══════════════════════════════════════
 const RADICAL_MAP = {
-  "氵": {"青":"清","可":"河","胡":"湖","木":"沐","曰":"汩","少":"沙",
+  "氵": {"青":"清","可":"河","胡":"湖","木":"沐","少":"沙","皮":"波",
          "方":null,"天":null,"心":null,"日":null,"土":null,
          "石":null,"月":null,"马":null,"目":null,"口":null,
          "斥":null,"才":null,"生":null,"乔":null,"鸟":null},
@@ -459,51 +460,50 @@ function startLevel(idx){
 // 生成方块
 // ══════════════════════════════════════
 function buildBlocks(){
-  const board=document.getElementById("board");
+  const board    = document.getElementById("board");
+  const brdWrap  = document.getElementById("board-wrap");
   board.innerHTML="";
   blockData=[];
 
-  // 读取 board 的实际渲染尺寸（board 是 absolute 撑满父容器的）
-  const bw=board.clientWidth;
-  const bh=board.clientHeight;
+  // 方框固定尺寸：宽度贴合屏幕（减去左右各8px margin），高度固定240px
+  const wrapW = brdWrap.clientWidth  || window.innerWidth;
+  const BW    = Math.max(240, wrapW - 16);   // board 宽
+  const BH    = 240;                          // board 高（固定，不随屏幕变大）
+  board.style.position = "relative";
+  board.style.width    = BW + "px";
+  board.style.height   = BH + "px";
+  // 取消 absolute 撑满，改为手动设置宽高，board-wrap 用 flex 居中
+  board.style.top=""; board.style.left=""; board.style.right=""; board.style.bottom="";
 
-  if(bw<10||bh<10){
-    // 尺寸异常，100ms 后重试一次
+  if(BW<10||BH<10){
     setTimeout(buildBlocks,100); return;
   }
 
   const pool=[...currentLevel.pool];
   shuffle(pool);
 
-  // 计算网格步距：4列 x 4行，步距让方块大量重叠
-  // 横向：4块铺满 bw，步距 = (bw - BRD_PAD*2 - BLOCK_W) / 3
-  const stepX = Math.floor((bw - BRD_PAD*2 - BLOCK_W) / 3);
-  const stepY = Math.floor((bh - BRD_PAD*2 - BLOCK_H) / 3);
-  const NCOLS=4, NROWS=4;
+  // 纯随机撒点（不用网格），分 4 层
+  // 每层独立随机，层号高的 z-index 更大（在上面）
+  const LAYERS = 4;
+  const PER_LAYER = Math.ceil(pool.length / LAYERS);
 
-  // 铺 4 层，每层 NCOLS*NROWS 个位置，带随机抖动
   const positions=[];
-  for(let layer=0;layer<4;layer++){
-    for(let r=0;r<NROWS;r++){
-      for(let c=0;c<NCOLS;c++){
-        const bx=BRD_PAD + c*stepX + rnd(-4,4);
-        const by=BRD_PAD + r*stepY + rnd(-4,4);
-        positions.push({
-          x: clamp(bx, BRD_PAD, bw-BLOCK_W-BRD_PAD),
-          y: clamp(by, BRD_PAD, bh-BLOCK_H-BRD_PAD),
-          layer
-        });
-      }
+  for(let layer=0;layer<LAYERS;layer++){
+    const count = layer < LAYERS-1 ? PER_LAYER : pool.length - PER_LAYER*(LAYERS-1);
+    for(let k=0;k<count;k++){
+      positions.push({
+        x: rnd(BRD_PAD, BW - BLOCK_W - BRD_PAD),
+        y: rnd(BRD_PAD, BH - BLOCK_H - BRD_PAD),
+        layer
+      });
     }
   }
-  shuffle(positions);
 
-  // 取前 pool.length 个位置，按 layer 排序（低层先渲染）
-  const used=positions.slice(0,pool.length);
-  used.sort((a,b)=>a.layer-b.layer);
+  // 按 layer 排序（低层先插入 DOM，z-index 低）
+  positions.sort((a,b)=>a.layer-b.layer);
 
-  used.forEach((pos,i)=>{
-    const radical=pool[i];
+  positions.forEach((pos,i)=>{
+    const radical=pool[i % pool.length];
     const isCorrect=!!RADICAL_MAP[currentLevel.radical][radical];
     const zIdx=10+pos.layer*6+rnd(0,5);
 
