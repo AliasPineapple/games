@@ -6,15 +6,14 @@
   <title>汉字拼图消消乐</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-    body{
-      font-family:"PingFang SC","Microsoft YaHei",sans-serif;
-      background:linear-gradient(135deg,#EFF6FF 0%,#DBEAFE 100%);
-      min-height:100vh;overflow:hidden;user-select:none;
-    }
+    html,body{height:100%;overflow:hidden;user-select:none;
+      font-family:"PingFang SC","Microsoft YaHei",sans-serif;}
+    body{background:linear-gradient(135deg,#EFF6FF,#DBEAFE);}
 
-    /* ── 关卡选择首屏 ── */
+    /* ── 关卡选择 ── */
     #screen-menu{
-      position:fixed;inset:0;background:linear-gradient(135deg,#EFF6FF,#BFDBFE);
+      position:fixed;inset:0;
+      background:linear-gradient(135deg,#EFF6FF,#BFDBFE);
       display:flex;flex-direction:column;align-items:center;
       z-index:200;padding:20px 16px;overflow-y:auto;
     }
@@ -24,89 +23,95 @@
     .level-btn{
       background:#fff;border:2px solid #BFDBFE;border-radius:14px;
       padding:12px 8px;text-align:center;cursor:pointer;
-      transition:transform .15s,box-shadow .15s,border-color .15s;
+      transition:transform .15s,box-shadow .15s;
       box-shadow:0 2px 8px rgba(29,78,216,.08);
     }
     .level-btn:active{transform:scale(.94)}
-    .level-btn:hover{border-color:#3B82F6;box-shadow:0 4px 12px rgba(59,130,246,.22)}
     .level-btn .lnum{font-size:13px;font-weight:700;color:#3B82F6}
-    .level-btn .lrad{font-size:28px;line-height:1.2}
+    .level-btn .lrad{font-size:28px;line-height:1.3}
     .level-btn .lname{font-size:11px;color:#94A3B8;margin-top:2px}
-    .level-btn .stars{font-size:14px;min-height:18px;color:#F59E0B}
+    .level-btn .stars{font-size:13px;min-height:18px;color:#F59E0B}
 
-    /* ── 游戏主界面 ── */
+    /* ── 游戏主界面：固定高度列布局 ── */
     #screen-game{
-      position:fixed;inset:0;display:none;flex-direction:column;
-      background:linear-gradient(135deg,#EFF6FF 0%,#DBEAFE 100%);
+      position:fixed;inset:0;
+      display:none;flex-direction:column;
+      background:linear-gradient(135deg,#EFF6FF,#DBEAFE);
     }
     #screen-game.active{display:flex}
 
-    /* 顶栏 */
+    /* 顶栏：固定高度 44px */
     #header{
+      height:44px;flex-shrink:0;
       display:flex;align-items:center;justify-content:space-between;
-      padding:10px 14px 6px;flex-shrink:0;
+      padding:0 14px;
     }
     #btn-back{
       background:#fff;border:1.5px solid #BFDBFE;border-radius:10px;
-      padding:5px 12px;font-size:13px;color:#3B82F6;cursor:pointer;
-      font-weight:600;
+      padding:4px 12px;font-size:13px;color:#3B82F6;cursor:pointer;font-weight:600;
     }
     #btn-back:active{transform:scale(.94)}
     #level-label{font-size:14px;font-weight:700;color:#1D4ED8}
 
-    /* 目标偏旁区 */
+    /* 目标区：固定高度 72px */
     #target-area{
-      display:flex;align-items:center;justify-content:center;
-      gap:12px;padding:6px 14px;flex-shrink:0;
+      height:72px;flex-shrink:0;
+      display:flex;align-items:center;justify-content:center;gap:12px;
+      padding:0 14px;
     }
     #target-block{
-      width:64px;height:64px;border-radius:14px;
+      width:56px;height:56px;border-radius:14px;flex-shrink:0;
       display:flex;flex-direction:column;align-items:center;justify-content:center;
       font-weight:800;box-shadow:0 4px 12px rgba(0,0,0,.12);
-      border:2px solid rgba(255,255,255,.6);flex-shrink:0;
+      border:2px solid rgba(255,255,255,.5);
     }
-    #target-char{font-size:30px;line-height:1}
-    #target-name{font-size:10px;margin-top:2px;opacity:.75}
+    #target-char{font-size:26px;line-height:1}
+    #target-name{font-size:9px;margin-top:1px;opacity:.75}
     #target-info{display:flex;flex-direction:column;gap:4px}
     #found-label{font-size:13px;color:#1D4ED8;font-weight:600}
 
-    /* 结果格子 */
+    /* 结果格子行：固定高度 52px */
     #result-row{
-      display:flex;gap:6px;padding:0 14px;flex-shrink:0;
-      flex-wrap:wrap;justify-content:center;
+      height:52px;flex-shrink:0;
+      display:flex;gap:6px;padding:4px 14px;
+      justify-content:flex-start;align-items:center;
     }
     .result-slot{
-      width:44px;height:44px;border-radius:10px;
+      width:40px;height:40px;border-radius:10px;
       background:rgba(255,255,255,.5);border:2px dashed #93C5FD;
       display:flex;align-items:center;justify-content:center;
-      font-size:22px;font-weight:700;color:#1D4ED8;
-      transition:transform .2s;
+      font-size:20px;font-weight:700;color:#1D4ED8;
     }
     .result-slot.filled{background:#fff;border-style:solid;border-color:#3B82F6}
     .result-slot.pop{animation:slotPop .3s ease-out}
     @keyframes slotPop{0%{transform:scale(1.4)}100%{transform:scale(1)}}
 
-    /* 计时进度条 */
-    #timer-wrap{padding:4px 14px;flex-shrink:0}
+    /* 计时进度条：固定高度 28px */
+    #timer-wrap{
+      height:28px;flex-shrink:0;
+      padding:0 14px;display:flex;flex-direction:column;justify-content:center;
+    }
     #timer-bar-bg{
       height:8px;background:rgba(255,255,255,.4);border-radius:4px;overflow:hidden;
     }
-    #timer-bar{height:100%;background:#3B82F6;border-radius:4px;transition:width .5s linear,background .5s}
-    #timer-text{font-size:11px;color:#64748B;text-align:right;margin-top:2px}
+    #timer-bar{height:100%;background:#3B82F6;border-radius:4px;
+      transition:width .9s linear,background .5s;width:100%}
+    #timer-text{font-size:10px;color:#64748B;text-align:right;margin-top:1px}
 
-    /* ── 方块堆叠区（带边框的方框） ── */
+    /* 方块堆叠区：flex:1 占满剩余空间，内部用 padding 控制方框边距 */
     #board-wrap{
-      flex:1;position:relative;
-      padding:4px;
-      overflow:hidden;
-    }
-    #board{
+      flex:1;min-height:0;
       position:relative;
+      padding:6px;
+    }
+    /* board 撑满 board-wrap，absolute 定位 */
+    #board{
+      position:absolute;
+      top:6px;left:6px;right:6px;bottom:6px;
       border:2.5px solid rgba(147,197,253,.7);
       border-radius:16px;
-      background:rgba(255,255,255,.25);
+      background:rgba(255,255,255,.22);
       overflow:hidden;
-      /* 宽高由 JS 动态设置，等于 wrap - 8px */
     }
 
     /* 方块 */
@@ -120,13 +125,9 @@
       display:flex;align-items:center;justify-content:center;
       font-size:24px;font-weight:800;color:#1E293B;
       cursor:pointer;
-      will-change:transform,top;
     }
-    .block:active{transform:scale(.9)}
-    /* 遮挡超过70%才禁用 */
-    .block.disabled{
-      opacity:.3;cursor:not-allowed;pointer-events:none;
-    }
+    .block:active:not(.disabled){transform:scale(.9)}
+    .block.disabled{opacity:.28;cursor:not-allowed;pointer-events:none;}
 
     /* 正确：飞走消失 */
     .block.anim-correct{
@@ -134,46 +135,49 @@
       pointer-events:none;
     }
     @keyframes flyUp{
-      0%  {transform:scale(1.2);opacity:1}
-      60% {transform:scale(1.1) translateY(-30px);opacity:.8}
-      100%{transform:scale(.2) translateY(-80px);opacity:0}
+      0%  {transform:scale(1.15);opacity:1}
+      100%{transform:scale(.1) translateY(-90px);opacity:0}
     }
 
-    /* 错误：抖动+红闪 */
+    /* 错误：抖动 */
     .block.anim-wrong{
       animation:shake .35s ease-out;
-      background:#FEE2E2 !important;
-      border-color:#EF4444 !important;
+      background:#FEE2E2!important;
+      border-color:#EF4444!important;
     }
     @keyframes shake{
-      0%,100%{transform:translateX(0) rotate(0)}
-      15%{transform:translateX(-7px) rotate(-2deg)}
-      35%{transform:translateX(7px) rotate(2deg)}
-      55%{transform:translateX(-5px) rotate(-1deg)}
-      75%{transform:translateX(5px) rotate(1deg)}
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-8px) rotate(-2deg)}
+      40%{transform:translateX(8px) rotate(2deg)}
+      60%{transform:translateX(-5px)}
+      80%{transform:translateX(5px)}
     }
 
-    /* 通关/失败遮罩 */
+    /* 遮罩 */
     .overlay{
       position:fixed;inset:0;background:rgba(0,0,0,.5);
       display:flex;align-items:center;justify-content:center;
-      z-index:100;opacity:0;pointer-events:none;
-      transition:opacity .3s;
+      z-index:100;opacity:0;pointer-events:none;transition:opacity .3s;
     }
     .overlay.show{opacity:1;pointer-events:all}
     .overlay-box{
-      background:#fff;border-radius:24px;padding:28px 32px;
+      background:#fff;border-radius:24px;padding:24px 28px;
       text-align:center;width:88%;max-width:320px;
       box-shadow:0 12px 40px rgba(0,0,0,.2);
       transform:scale(.85);transition:transform .3s;
     }
     .overlay.show .overlay-box{transform:scale(1)}
-    .overlay-title{font-size:24px;font-weight:800;margin-bottom:8px}
-    .overlay-sub{font-size:14px;color:#64748B;margin-bottom:16px}
-    .star-row{font-size:36px;margin-bottom:16px;letter-spacing:4px}
+    .overlay-title{font-size:24px;font-weight:800;margin-bottom:6px}
+    .overlay-sub{font-size:13px;color:#64748B;margin-bottom:10px}
+    .star-row{font-size:34px;margin-bottom:12px;letter-spacing:4px}
+    .fail-answers{
+      margin-bottom:12px;font-size:13px;color:#475569;
+      line-height:1.9;text-align:left;
+      max-height:120px;overflow-y:auto;
+    }
     .ov-btns{display:flex;gap:10px;justify-content:center}
     .ov-btn{
-      padding:10px 24px;border-radius:12px;font-size:15px;font-weight:700;
+      padding:9px 22px;border-radius:12px;font-size:15px;font-weight:700;
       cursor:pointer;border:none;transition:transform .12s;
     }
     .ov-btn:active{transform:scale(.94)}
@@ -183,7 +187,7 @@
 </head>
 <body>
 
-<!-- 关卡选择首屏 -->
+<!-- 关卡选择 -->
 <div id="screen-menu">
   <h1>汉字拼图消消乐</h1>
   <p class="sub">点击偏旁方块，组成汉字！</p>
@@ -211,10 +215,9 @@
 
   <div id="timer-wrap">
     <div id="timer-bar-bg"><div id="timer-bar"></div></div>
-    <div id="timer-text">01:15</div>
+    <div id="timer-text">01:30</div>
   </div>
 
-  <!-- 方框区域 -->
   <div id="board-wrap">
     <div id="board"></div>
   </div>
@@ -228,7 +231,7 @@
     <div class="overlay-sub" id="win-sub"></div>
     <div class="ov-btns">
       <button class="ov-btn secondary" id="btn-win-menu">关卡选择</button>
-      <button class="ov-btn primary" id="btn-win-next">下一关</button>
+      <button class="ov-btn primary"   id="btn-win-next">下一关</button>
     </div>
   </div>
 </div>
@@ -238,120 +241,100 @@
   <div class="overlay-box">
     <div class="overlay-title" style="color:#EF4444">时间到！</div>
     <div class="overlay-sub" id="fail-sub"></div>
-    <div id="fail-answers" style="margin-bottom:14px;font-size:13px;color:#475569;line-height:1.8;text-align:left"></div>
+    <div class="fail-answers" id="fail-answers"></div>
     <div class="ov-btns">
       <button class="ov-btn secondary" id="btn-fail-menu">关卡选择</button>
-      <button class="ov-btn primary" id="btn-fail-retry">重试</button>
+      <button class="ov-btn primary"   id="btn-fail-retry">重试</button>
     </div>
   </div>
 </div>
 
 <script>
-// ══════════════════════════════════════════════
-// 1. 关卡数据
-// ══════════════════════════════════════════════
-
-// RADICAL_MAP[目标偏旁][字根] = 合成汉字（null 表示干扰项）
+// ══════════════════════════════════════
+// 关卡数据
+// ══════════════════════════════════════
 const RADICAL_MAP = {
-  "氵": {
-    "青":"清","可":"河","胡":"湖","木":"沐","曰":"汩","少":"沙",
-    "方":null,"天":null,"心":null,"日":null,"土":null,
-    "石":null,"月":null,"马":null,"目":null,"口":null,
-    "斥":null,"才":null,"生":null,"乔":null,"鸟":null,
-  },
-  "木": {
-    "目":"相","木":"林","口":"杏","乔":"桥","奉":"棒",
-    "天":null,"石":null,"土":null,"心":null,"日":null,
-    "马":null,"月":null,"青":null,"方":null,"也":null,
-    "斥":null,"鸟":null,"少":null,"才":null,"成":null,
-  },
-  "口": {
-    "天":"吞","鸟":"鸣","斥":"叱","马":"吗","牛":"哞",
-    "月":null,"木":null,"土":null,"石":null,"山":null,
-    "青":null,"日":null,"心":null,"方":null,"目":null,
-    "少":null,"成":null,"才":null,"乔":null,"也":null,
-  },
-  "土": {
-    "也":"地","方":"坊","才":"在","成":"城","匀":"均",
-    "月":null,"天":null,"心":null,"青":null,"马":null,
-    "木":null,"日":null,"石":null,"山":null,"目":null,
-    "斥":null,"鸟":null,"少":null,"乔":null,"牛":null,
-  },
-  "日": {
-    "月":"明","青":"晴","寸":"时","生":"星","京":"景",
-    "土":null,"心":null,"木":null,"天":null,"马":null,
-    "方":null,"石":null,"山":null,"目":null,"也":null,
-    "才":null,"斥":null,"鸟":null,"少":null,"成":null,
-  },
-  "忄": {
-    "青":"情","亡":"忘","生":"性","各":"恪","夬":"快",
-    "天":null,"月":null,"木":null,"土":null,"马":null,
-    "方":null,"石":null,"心":null,"日":null,"目":null,
-    "才":null,"也":null,"成":null,"乔":null,"牛":null,
-  },
-  "火": {
-    "丁":"灯","少":"炒","因":"烟","户":"炉","包":"炮",
-    "山":null,"天":null,"土":null,"马":null,"月":null,
-    "木":null,"石":null,"心":null,"日":null,"方":null,
-    "目":null,"才":null,"青":null,"也":null,"成":null,
-  },
-  "亻": {
-    "木":"休","门":"们","立":"位","尔":"你","也":"他",
-    "天":null,"月":null,"土":null,"马":null,"心":null,
-    "方":null,"石":null,"日":null,"山":null,"目":null,
-    "青":null,"少":null,"才":null,"乔":null,"成":null,
-  },
-  "钅": {
-    "叉":"钗","同":"铜","艮":"银","冈":"钢","者":"锗",
-    "天":null,"月":null,"木":null,"马":null,"土":null,
-    "方":null,"石":null,"心":null,"日":null,"山":null,
-    "目":null,"青":null,"少":null,"才":null,"也":null,
-  },
+  "氵": {"青":"清","可":"河","胡":"湖","木":"沐","曰":"汩","少":"沙",
+         "方":null,"天":null,"心":null,"日":null,"土":null,
+         "石":null,"月":null,"马":null,"目":null,"口":null,
+         "斥":null,"才":null,"生":null,"乔":null,"鸟":null},
+  "木": {"目":"相","木":"林","口":"杏","乔":"桥","奉":"棒",
+         "天":null,"石":null,"土":null,"心":null,"日":null,
+         "马":null,"月":null,"青":null,"方":null,"也":null,
+         "斥":null,"鸟":null,"少":null,"才":null,"成":null},
+  "口": {"天":"吞","鸟":"鸣","斥":"叱","马":"吗","牛":"哞",
+         "月":null,"木":null,"土":null,"石":null,"山":null,
+         "青":null,"日":null,"心":null,"方":null,"目":null,
+         "少":null,"成":null,"才":null,"乔":null,"也":null},
+  "土": {"也":"地","方":"坊","才":"在","成":"城","匀":"均",
+         "月":null,"天":null,"心":null,"青":null,"马":null,
+         "木":null,"日":null,"石":null,"山":null,"目":null,
+         "斥":null,"鸟":null,"少":null,"乔":null,"牛":null},
+  "日": {"月":"明","青":"晴","寸":"时","生":"星","京":"景",
+         "土":null,"心":null,"木":null,"天":null,"马":null,
+         "方":null,"石":null,"山":null,"目":null,"也":null,
+         "才":null,"斥":null,"鸟":null,"少":null,"成":null},
+  "忄": {"青":"情","亡":"忘","生":"性","各":"恪","夬":"快",
+         "天":null,"月":null,"木":null,"土":null,"马":null,
+         "方":null,"石":null,"心":null,"日":null,"目":null,
+         "才":null,"也":null,"成":null,"乔":null,"牛":null},
+  "火": {"丁":"灯","少":"炒","因":"烟","户":"炉","包":"炮",
+         "山":null,"天":null,"土":null,"马":null,"月":null,
+         "木":null,"石":null,"心":null,"日":null,"方":null,
+         "目":null,"才":null,"青":null,"也":null,"成":null},
+  "亻": {"木":"休","门":"们","立":"位","尔":"你","也":"他",
+         "天":null,"月":null,"土":null,"马":null,"心":null,
+         "方":null,"石":null,"日":null,"山":null,"目":null,
+         "青":null,"少":null,"才":null,"乔":null,"成":null},
+  "钅": {"叉":"钗","同":"铜","艮":"银","冈":"钢","者":"锗",
+         "天":null,"月":null,"木":null,"马":null,"土":null,
+         "方":null,"石":null,"心":null,"日":null,"山":null,
+         "目":null,"青":null,"少":null,"才":null,"也":null},
 };
 
-// 偏旁配色
 const RADICAL_STYLE = {
-  "氵": {bg:"#EFF6FF", border:"#93C5FD", blockBg:"#DBEAFE", targetBg:"linear-gradient(135deg,#3B82F6,#2563EB)", color:"#fff", accent:"#3B82F6"},
-  "木": {bg:"#F0FDF4", border:"#86EFAC", blockBg:"#DCFCE7", targetBg:"linear-gradient(135deg,#16A34A,#15803D)", color:"#fff", accent:"#16A34A"},
-  "口": {bg:"#F5F3FF", border:"#C4B5FD", blockBg:"#EDE9FE", targetBg:"linear-gradient(135deg,#7C3AED,#6D28D9)", color:"#fff", accent:"#7C3AED"},
-  "土": {bg:"#FEF3C7", border:"#FCD34D", blockBg:"#FEF9C3", targetBg:"linear-gradient(135deg,#D97706,#B45309)", color:"#fff", accent:"#D97706"},
-  "日": {bg:"#FFF7ED", border:"#FED7AA", blockBg:"#FFEDD5", targetBg:"linear-gradient(135deg,#EA580C,#C2410C)", color:"#fff", accent:"#EA580C"},
-  "忄": {bg:"#FDF2F8", border:"#F9A8D4", blockBg:"#FCE7F3", targetBg:"linear-gradient(135deg,#DB2777,#BE185D)", color:"#fff", accent:"#DB2777"},
-  "火": {bg:"#FEF2F2", border:"#FCA5A5", blockBg:"#FEE2E2", targetBg:"linear-gradient(135deg,#EF4444,#DC2626)", color:"#fff", accent:"#EF4444"},
-  "亻": {bg:"#ECFEFF", border:"#67E8F9", blockBg:"#CFFAFE", targetBg:"linear-gradient(135deg,#0891B2,#0E7490)", color:"#fff", accent:"#0891B2"},
-  "钅": {bg:"#FFFBEB", border:"#FDE68A", blockBg:"#FEF3C7", targetBg:"linear-gradient(135deg,#D97706,#92400E)", color:"#fff", accent:"#B45309"},
+  "氵":{accent:"#3B82F6",targetBg:"linear-gradient(135deg,#3B82F6,#2563EB)",border:"#93C5FD"},
+  "木":{accent:"#16A34A",targetBg:"linear-gradient(135deg,#16A34A,#15803D)",border:"#86EFAC"},
+  "口":{accent:"#7C3AED",targetBg:"linear-gradient(135deg,#7C3AED,#6D28D9)",border:"#C4B5FD"},
+  "土":{accent:"#D97706",targetBg:"linear-gradient(135deg,#D97706,#B45309)",border:"#FCD34D"},
+  "日":{accent:"#EA580C",targetBg:"linear-gradient(135deg,#EA580C,#C2410C)",border:"#FED7AA"},
+  "忄":{accent:"#DB2777",targetBg:"linear-gradient(135deg,#DB2777,#BE185D)",border:"#F9A8D4"},
+  "火":{accent:"#EF4444",targetBg:"linear-gradient(135deg,#EF4444,#DC2626)",border:"#FCA5A5"},
+  "亻":{accent:"#0891B2",targetBg:"linear-gradient(135deg,#0891B2,#0E7490)",border:"#67E8F9"},
+  "钅":{accent:"#B45309",targetBg:"linear-gradient(135deg,#D97706,#92400E)",border:"#FDE68A"},
 };
 
-// 关卡配置——pool 至少要有 25 个字根供堆叠展示
 const LEVELS = [
-  {id:"1-1", radical:"氵", radName:"水字旁", target:5, time:90,
-   pool:["青","可","胡","木","曰","方","天","心","日","土","石","月","马","目","口","斥","少","才","生","乔","鸟","成","也","牛","山"]},
-  {id:"1-2", radical:"木", radName:"木字旁", target:5, time:90,
+  {id:"1-1",radical:"氵",radName:"水字旁",target:6,time:90,
+   pool:["青","可","胡","木","曰","少","方","天","心","日","土","石","月","马","目","口","斥","才","生","乔","鸟","成","也","牛","山"]},
+  {id:"1-2",radical:"木",radName:"木字旁",target:5,time:90,
    pool:["目","木","口","乔","奉","天","石","土","心","日","马","月","青","方","也","斥","鸟","少","才","成","牛","山","匀","寸","亡"]},
-  {id:"1-3", radical:"口", radName:"口字旁", target:5, time:90,
+  {id:"1-3",radical:"口",radName:"口字旁",target:5,time:90,
    pool:["天","鸟","斥","马","牛","月","木","土","石","山","青","日","心","方","目","少","成","才","乔","也","匀","寸","亡","丁","胡"]},
-  {id:"1-4", radical:"土", radName:"土字旁", target:5, time:90,
+  {id:"1-4",radical:"土",radName:"土字旁",target:5,time:90,
    pool:["也","方","才","成","匀","月","天","心","青","马","木","日","石","山","目","斥","鸟","少","乔","牛","胡","寸","亡","京","夬"]},
-  {id:"1-5", radical:"日", radName:"日字旁", target:5, time:90,
+  {id:"1-5",radical:"日",radName:"日字旁",target:5,time:90,
    pool:["月","青","寸","生","京","土","心","木","天","马","方","石","山","目","也","才","斥","鸟","少","成","匀","胡","亡","乔","牛"]},
-  {id:"1-6", radical:"忄", radName:"心字旁", target:5, time:85,
+  {id:"1-6",radical:"忄",radName:"心字旁",target:5,time:85,
    pool:["青","亡","生","各","夬","天","月","木","土","马","方","石","心","日","目","才","也","成","乔","牛","胡","寸","鸟","少","匀"]},
-  {id:"1-7", radical:"火", radName:"火字旁", target:5, time:85,
+  {id:"1-7",radical:"火",radName:"火字旁",target:5,time:85,
    pool:["丁","少","因","户","包","山","天","土","马","月","木","石","心","日","方","目","才","青","也","成","胡","寸","鸟","匀","乔"]},
-  {id:"1-8", radical:"亻", radName:"人字旁", target:5, time:85,
+  {id:"1-8",radical:"亻",radName:"人字旁",target:5,time:85,
    pool:["木","门","立","尔","也","天","月","土","马","心","方","石","日","山","目","青","少","才","乔","成","胡","寸","鸟","匀","牛"]},
-  {id:"1-9", radical:"钅", radName:"金字旁", target:5, time:85,
+  {id:"1-9",radical:"钅",radName:"金字旁",target:5,time:85,
    pool:["叉","同","艮","冈","者","天","月","木","马","土","方","石","心","日","山","目","青","少","才","也","胡","寸","鸟","匀","成"]},
 ];
 
-// ══════════════════════════════════════════════
-// 2. 状态
-// ══════════════════════════════════════════════
-const BLOCK_SIZE = 56;   // 方块像素尺寸
+// ══════════════════════════════════════
+// 常量 & 状态（全部在顶层声明，避免 ReferenceError）
+// ══════════════════════════════════════
+const BLOCK_W  = 56;
+const BLOCK_H  = 56;
+const BRD_PAD  = 6;   // 方块离方框边缘的最小距离
 
 let currentLevel    = null;
 let currentLevelIdx = 0;
-let blockData       = [];  // [{el, x, y, zIndex, radical, removed, isClickable}]
+let blockData       = [];
 let foundCount      = 0;
 let errorCount      = 0;
 let timeLeft        = 0;
@@ -360,481 +343,374 @@ let timerInterval   = null;
 let gameOver        = false;
 let resultSlots     = [];
 
+// ══════════════════════════════════════
 // 存档
+// ══════════════════════════════════════
 function saveStars(id, stars) {
-  const d = JSON.parse(localStorage.getItem("hzpuzzle_stars") || "{}");
-  if ((d[id] || 0) < stars) d[id] = stars;
-  localStorage.setItem("hzpuzzle_stars", JSON.stringify(d));
+  const d = JSON.parse(localStorage.getItem("hzpuzzle") || "{}");
+  if ((d[id]||0) < stars) d[id] = stars;
+  localStorage.setItem("hzpuzzle", JSON.stringify(d));
 }
 function getStars(id) {
-  return JSON.parse(localStorage.getItem("hzpuzzle_stars") || "{}")[id] || 0;
+  return JSON.parse(localStorage.getItem("hzpuzzle") || "{}")[id] || 0;
 }
 
-// ══════════════════════════════════════════════
-// 3. 音效（Web Audio API）
-// ══════════════════════════════════════════════
-let audioCtx = null;
-function getAudioCtx() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  return audioCtx;
+// ══════════════════════════════════════
+// 音效
+// ══════════════════════════════════════
+let _actx = null;
+function actx() {
+  if (!_actx) _actx = new (window.AudioContext||window.webkitAudioContext)();
+  return _actx;
 }
-function playTone(f1, f2, dur, type="sine", vol=0.25) {
-  try {
-    const ctx = getAudioCtx();
-    const osc = ctx.createOscillator();
-    const g   = ctx.createGain();
-    osc.type = type;
-    osc.connect(g); g.connect(ctx.destination);
-    osc.frequency.setValueAtTime(f1, ctx.currentTime);
-    if (f2 !== f1) osc.frequency.exponentialRampToValueAtTime(f2, ctx.currentTime + dur);
-    g.gain.setValueAtTime(vol, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur + 0.05);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + dur + 0.06);
-  } catch(e){}
+function tone(f1,f2,dur,type="sine",vol=0.22){
+  try{
+    const c=actx(),o=c.createOscillator(),g=c.createGain();
+    o.type=type; o.connect(g); g.connect(c.destination);
+    o.frequency.setValueAtTime(f1,c.currentTime);
+    if(f2!==f1) o.frequency.exponentialRampToValueAtTime(f2,c.currentTime+dur);
+    g.gain.setValueAtTime(vol,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+dur+0.04);
+    o.start(c.currentTime); o.stop(c.currentTime+dur+0.05);
+  }catch(e){}
 }
-function sfxCorrect(){ playTone(440, 880, 0.15); }
-function sfxWrong()  { playTone(200, 100, 0.2, "sawtooth", 0.15); }
-function sfxWin()    { [523,659,784].forEach((f,i)=>setTimeout(()=>playTone(f,f,0.18),i*200)); }
-function sfxFail()   { playTone(300, 100, 0.5, "sine", 0.2); }
-function sfxTick()   { playTone(880, 880, 0.07, "sine", 0.1); }
+const sfxOK   = ()=>tone(440,880,0.14);
+const sfxBad  = ()=>tone(200,100,0.2,"sawtooth",0.14);
+const sfxWin  = ()=>[523,659,784].forEach((f,i)=>setTimeout(()=>tone(f,f,0.18),i*200));
+const sfxFail = ()=>tone(300,100,0.45);
+const sfxTick = ()=>tone(900,900,0.06,"sine",0.08);
 
-// ══════════════════════════════════════════════
-// 4. 关卡选择界面
-// ══════════════════════════════════════════════
-function renderMenu() {
-  const grid = document.getElementById("level-grid");
-  grid.innerHTML = "";
-  LEVELS.forEach((lv, idx) => {
-    const stars = getStars(lv.id);
-    const s = RADICAL_STYLE[lv.radical];
-    const btn = document.createElement("div");
-    btn.className = "level-btn";
-    btn.innerHTML = `
+// ══════════════════════════════════════
+// 工具
+// ══════════════════════════════════════
+function rnd(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); }
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+}
+
+// ══════════════════════════════════════
+// 关卡选择
+// ══════════════════════════════════════
+function renderMenu(){
+  const grid=document.getElementById("level-grid");
+  grid.innerHTML="";
+  LEVELS.forEach((lv,idx)=>{
+    const st=getStars(lv.id);
+    const s=RADICAL_STYLE[lv.radical];
+    const btn=document.createElement("div");
+    btn.className="level-btn";
+    btn.innerHTML=`
       <div class="lnum">第 ${lv.id} 关</div>
       <div class="lrad" style="color:${s.accent}">${lv.radical}</div>
       <div class="lname">${lv.radName}</div>
-      <div class="stars">${"★".repeat(stars)}${"☆".repeat(3-stars)}</div>
-    `;
-    btn.addEventListener("click", () => startLevel(idx));
+      <div class="stars">${"★".repeat(st)}${"☆".repeat(3-st)}</div>`;
+    btn.addEventListener("click",()=>startLevel(idx));
     grid.appendChild(btn);
   });
 }
 
-// ══════════════════════════════════════════════
-// 5. 启动关卡
-// ══════════════════════════════════════════════
-function startLevel(idx) {
-  currentLevelIdx = idx;
-  currentLevel    = LEVELS[idx];
-  foundCount      = 0;
-  errorCount      = 0;
-  gameOver        = false;
+// ══════════════════════════════════════
+// 启动关卡
+// ══════════════════════════════════════
+function startLevel(idx){
+  currentLevelIdx=idx;
+  currentLevel=LEVELS[idx];
+  foundCount=0; errorCount=0; gameOver=false;
+  blockData=[];
 
-  // 切换界面
-  document.getElementById("screen-menu").style.display = "none";
+  document.getElementById("screen-menu").style.display="none";
   document.getElementById("screen-game").classList.add("active");
 
   // 配色
-  applyStyle(currentLevel.radical);
+  const s=RADICAL_STYLE[currentLevel.radical];
+  document.getElementById("target-block").style.background=s.targetBg;
+  document.getElementById("target-block").style.color="#fff";
+  document.getElementById("timer-bar").style.background=s.targetBg;
+  document.getElementById("board").style.borderColor=s.border;
 
-  // 顶栏
-  document.getElementById("level-label").textContent = `第 ${currentLevel.id} 关`;
-  document.getElementById("target-char").textContent  = currentLevel.radical;
-  document.getElementById("target-name").textContent  = currentLevel.radName;
-  updateFoundLabel();
+  document.getElementById("level-label").textContent=`第 ${currentLevel.id} 关`;
+  document.getElementById("target-char").textContent=currentLevel.radical;
+  document.getElementById("target-name").textContent=currentLevel.radName;
 
   // 结果格子
-  const rr = document.getElementById("result-row");
-  rr.innerHTML = "";
-  resultSlots = [];
-  for (let i = 0; i < currentLevel.target; i++) {
-    const slot = document.createElement("div");
-    slot.className = "result-slot";
-    rr.appendChild(slot);
-    resultSlots.push(slot);
+  const rr=document.getElementById("result-row");
+  rr.innerHTML=""; resultSlots=[];
+  for(let i=0;i<currentLevel.target;i++){
+    const sl=document.createElement("div");
+    sl.className="result-slot";
+    rr.appendChild(sl); resultSlots.push(sl);
   }
+  updateFoundLabel();
 
   // 计时
-  timeLeft  = currentLevel.time;
-  totalTime = currentLevel.time;
+  clearInterval(timerInterval);
+  timeLeft=currentLevel.time; totalTime=currentLevel.time;
   updateTimerBar();
 
-  // 生成方块（延迟一帧等 DOM 稳定）
-  clearInterval(timerInterval);
-  setTimeout(() => {
+  // 等 DOM 完成渲染后再测量 board 尺寸
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
     buildBlocks();
     startTimer();
-  }, 60);
+  }));
 }
 
-function applyStyle(radical) {
-  const s = RADICAL_STYLE[radical];
-  document.body.style.background = `linear-gradient(135deg,${s.bg},${s.blockBg})`;
-  const tb = document.getElementById("target-block");
-  tb.style.background   = s.targetBg;
-  tb.style.color        = s.color;
-  tb.style.borderColor  = "rgba(255,255,255,.4)";
-  document.getElementById("timer-bar").style.background = s.targetBg;
-  document.getElementById("board").style.borderColor = s.border;
-}
+// ══════════════════════════════════════
+// 生成方块
+// ══════════════════════════════════════
+function buildBlocks(){
+  const board=document.getElementById("board");
+  board.innerHTML="";
+  blockData=[];
 
-// ══════════════════════════════════════════════
-// 6. 方块生成 & 布局（方框内堆叠，至少3层）
-// ══════════════════════════════════════════════
-function buildBlocks() {
-  const board     = document.getElementById("board");
-  const boardWrap = document.getElementById("board-wrap");
-  board.innerHTML = "";
-  blockData = [];
+  // 读取 board 的实际渲染尺寸（board 是 absolute 撑满父容器的）
+  const bw=board.clientWidth;
+  const bh=board.clientHeight;
 
-  // 计算方框尺寸：撑满 board-wrap，然后用小步距让方块密集堆叠
-  const wrapW  = boardWrap.clientWidth  || window.innerWidth;
-  const wrapH  = boardWrap.clientHeight || Math.max(200, window.innerHeight - 270);
-  const boardW = Math.max(200, wrapW  - 8);
-  const boardH = Math.max(200, wrapH  - 8);
-  board.style.width  = boardW + "px";
-  board.style.height = boardH + "px";
-
-  // 步距：让 4 列方块铺满宽度并有大量重叠（密集感）
-  const NCOLS = 4;
-  const NROWS = 4;
-  const STEP  = Math.floor((boardW - MARGIN * 2 - BLOCK_SIZE) / (NCOLS - 1));
-  // STEP 约等于 (boardW - 60) / 3，确保4列方块横向铺满
-
-  const pool    = [...currentLevel.pool];
-  const radMap  = RADICAL_MAP[currentLevel.radical];
-  const MARGIN  = 4;  // 方块距方框边缘最小距离
-
-  // 打乱顺序
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
+  if(bw<10||bh<10){
+    // 尺寸异常，100ms 后重试一次
+    setTimeout(buildBlocks,100); return;
   }
 
-  // 用固定 NCOLS x NROWS 网格铺 4 层位置
-  let positions = [];
-  for (let layer = 0; layer < 4; layer++) {
-    for (let r = 0; r < NROWS; r++) {
-      for (let c = 0; c < NCOLS; c++) {
-        const bx = MARGIN + c * STEP + randInt(-5, 5);
-        const by = MARGIN + r * STEP + randInt(-5, 5);
-        const x  = clamp(bx, MARGIN, boardW - BLOCK_SIZE - MARGIN);
-        const y  = clamp(by, MARGIN, boardH - BLOCK_SIZE - MARGIN);
-        positions.push({x, y, layer});
+  const pool=[...currentLevel.pool];
+  shuffle(pool);
+
+  // 计算网格步距：4列 x 4行，步距让方块大量重叠
+  // 横向：4块铺满 bw，步距 = (bw - BRD_PAD*2 - BLOCK_W) / 3
+  const stepX = Math.floor((bw - BRD_PAD*2 - BLOCK_W) / 3);
+  const stepY = Math.floor((bh - BRD_PAD*2 - BLOCK_H) / 3);
+  const NCOLS=4, NROWS=4;
+
+  // 铺 4 层，每层 NCOLS*NROWS 个位置，带随机抖动
+  const positions=[];
+  for(let layer=0;layer<4;layer++){
+    for(let r=0;r<NROWS;r++){
+      for(let c=0;c<NCOLS;c++){
+        const bx=BRD_PAD + c*stepX + rnd(-4,4);
+        const by=BRD_PAD + r*stepY + rnd(-4,4);
+        positions.push({
+          x: clamp(bx, BRD_PAD, bw-BLOCK_W-BRD_PAD),
+          y: clamp(by, BRD_PAD, bh-BLOCK_H-BRD_PAD),
+          layer
+        });
       }
     }
   }
-
-  // 打乱位置顺序
   shuffle(positions);
 
-  // 取前 pool.length 个位置
-  const usedPos = positions.slice(0, pool.length);
+  // 取前 pool.length 个位置，按 layer 排序（低层先渲染）
+  const used=positions.slice(0,pool.length);
+  used.sort((a,b)=>a.layer-b.layer);
 
-  // 按位置层数分配 z-index：layer 越大 z 越高（后放在上面）
-  usedPos.sort((a, b) => a.layer - b.layer);
+  used.forEach((pos,i)=>{
+    const radical=pool[i];
+    const isCorrect=!!RADICAL_MAP[currentLevel.radical][radical];
+    const zIdx=10+pos.layer*6+rnd(0,5);
 
-  usedPos.forEach((pos, i) => {
-    const radical   = pool[i % pool.length];
-    const isCorrect = !!radMap[radical];
-    const zIdx      = 10 + pos.layer * 5 + randInt(0, 4);
+    const el=document.createElement("div");
+    el.className="block";
+    el.style.left  =pos.x+"px";
+    el.style.top   =(-BLOCK_H-20)+"px";   // 初始位置在方框外顶部
+    el.style.zIndex=zIdx;
+    el.style.transition=`top .4s cubic-bezier(.22,.61,.36,1) ${i*25}ms`;
+    el.textContent=radical;
 
-    const el = document.createElement("div");
-    el.className = "block";
-
-    // 飘落动画：从顶部 -BLOCK_SIZE 开始 transition 到目标位置
-    el.style.left    = pos.x + "px";
-    el.style.top     = (-BLOCK_SIZE - 10) + "px";
-    el.style.zIndex  = zIdx;
-    el.style.transition = `top .4s cubic-bezier(.22,.61,.36,1) ${i * 30}ms`;
-    el.textContent   = radical;
-
-    const bidx = blockData.length;
-    el._bidx = bidx;
-
-    // 点击事件——直接在 el 上闭包 bidx，不依赖外部变量
-    el.addEventListener("click", function(e) {
-      e.stopPropagation();
-      handleBlockClick(bidx);
-    });
-
+    const bidx=blockData.length;
+    el.addEventListener("click",e=>{e.stopPropagation();handleClick(bidx);});
     board.appendChild(el);
+
     blockData.push({
-      el, x: pos.x, y: pos.y,
-      w: BLOCK_SIZE, h: BLOCK_SIZE,
-      zIndex: zIdx,
+      el, x:pos.x, y:pos.y,
+      w:BLOCK_W, h:BLOCK_H,
+      zIndex:zIdx,
       radical, isCorrect,
-      isClickable: true,
-      removed: false,
+      isClickable:true, removed:false
     });
 
-    // 触发飘落
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        el.style.top = pos.y + "px";
-      });
-    });
+    // 触发飘落（双帧延迟确保 transition 生效）
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      el.style.top=pos.y+"px";
+    }));
   });
 
-  // 等全部方块落地后计算遮挡
-  const maxDelay = pool.length * 30 + 500;
-  setTimeout(() => updateClickability(), maxDelay);
+  // 全部落地后计算遮挡
+  const landDelay=pool.length*25+500;
+  setTimeout(updateClickability, landDelay);
 }
 
-// 工具函数
-function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-function clamp(v, lo, hi)  { return Math.max(lo, Math.min(hi, v)); }
-function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-}
-
-// ══════════════════════════════════════════════
-// 7. 遮挡计算（关键修复：用实际 DOM top 值，union 合并）
-// ══════════════════════════════════════════════
-
-// 计算矩形交集面积
-function intersectArea(a, b) {
-  const ox = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
-  const oy = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
-  return ox * oy;
-}
-
-// 计算"被多个矩形联合覆盖"的面积（扫描线法，避免重复计数）
-// 为简化，用像素采样法（精度足够）
-function coveredByUnion(target, coverList) {
-  if (coverList.length === 0) return 0;
-
-  // 仅对目标矩形内部像素采样，步长 8px
-  const STEP = 8;
-  let total   = 0;
-  let covered = 0;
-
-  for (let py = target.y + STEP / 2; py < target.y + target.h; py += STEP) {
-    for (let px = target.x + STEP / 2; px < target.x + target.w; px += STEP) {
+// ══════════════════════════════════════
+// 遮挡计算（像素采样联合覆盖，避免重复计数）
+// ══════════════════════════════════════
+function coveredRatio(target, covers){
+  if(!covers.length) return 0;
+  const STEP=8;
+  let total=0, hit=0;
+  for(let py=target.y+STEP/2; py<target.y+target.h; py+=STEP){
+    for(let px=target.x+STEP/2; px<target.x+target.w; px+=STEP){
       total++;
-      // 检查该采样点是否被任意 cover 矩形覆盖
-      for (const c of coverList) {
-        if (px >= c.x && px < c.x + c.w && py >= c.y && py < c.y + c.h) {
-          covered++;
-          break;  // 联合：一个覆盖就算，不重复计
-        }
+      for(const c of covers){
+        if(px>=c.x&&px<c.x+c.w&&py>=c.y&&py<c.y+c.h){hit++;break;}
       }
     }
   }
-
-  return covered / total;  // 返回覆盖比例 0~1
+  return hit/total;
 }
 
-function updateClickability() {
-  // 先从 DOM 读取最新的实际位置（飘落结束后 top 已是目标值）
-  blockData.forEach(bd => {
-    if (bd.removed) return;
-    bd.y = parseFloat(bd.el.style.top) || bd.y;
+function updateClickability(){
+  // 先从 DOM 同步最新 top（飘落结束后）
+  blockData.forEach(bd=>{
+    if(bd.removed) return;
+    const t=parseFloat(bd.el.style.top);
+    if(!isNaN(t)) bd.y=t;
   });
-
-  blockData.forEach((bd, i) => {
-    if (bd.removed) return;
-
-    // 收集所有比当前层 z-index 更高的、未移除的方块
-    const upperBlocks = blockData.filter((other, j) =>
-      j !== i && !other.removed && other.zIndex > bd.zIndex
-    );
-
-    const ratio = coveredByUnion(bd, upperBlocks);
-    bd.isClickable = ratio < 0.7;
-    bd.el.classList.toggle("disabled", !bd.isClickable);
+  blockData.forEach((bd,i)=>{
+    if(bd.removed) return;
+    const uppers=blockData.filter((_,j)=>j!==i&&!blockData[j].removed&&blockData[j].zIndex>bd.zIndex);
+    const r=coveredRatio(bd,uppers);
+    bd.isClickable=(r<0.7);
+    bd.el.classList.toggle("disabled",!bd.isClickable);
   });
 }
 
-// ══════════════════════════════════════════════
-// 8. 点击处理（直接用 bidx，无闭包污染）
-// ══════════════════════════════════════════════
-function handleBlockClick(bidx) {
-  const bd = blockData[bidx];
-  if (!bd || bd.removed || !bd.isClickable || gameOver) return;
-
-  if (bd.isCorrect) {
-    doCorrect(bd);
-  } else {
-    doWrong(bd);
-  }
+// ══════════════════════════════════════
+// 点击处理
+// ══════════════════════════════════════
+function handleClick(bidx){
+  const bd=blockData[bidx];
+  if(!bd||bd.removed||!bd.isClickable||gameOver) return;
+  bd.isCorrect ? doCorrect(bd) : doWrong(bd);
 }
 
-function doCorrect(bd) {
-  sfxCorrect();
-  bd.removed = true;                    // 立即标记，防止重复点击
+function doCorrect(bd){
+  sfxOK();
+  bd.removed=true;
   bd.el.classList.add("anim-correct");
-  bd.el.style.pointerEvents = "none";
-
-  const hanzi = RADICAL_MAP[currentLevel.radical][bd.radical];
-
-  setTimeout(() => {
-    // 动画结束后彻底从 DOM 移除，不留残影
-    if (bd.el.parentNode) bd.el.parentNode.removeChild(bd.el);
+  bd.el.style.pointerEvents="none";
+  const hanzi=RADICAL_MAP[currentLevel.radical][bd.radical];
+  setTimeout(()=>{
+    if(bd.el.parentNode) bd.el.parentNode.removeChild(bd.el);
     updateClickability();
-
-    // 填入结果格子
-    const slot = resultSlots[foundCount];
-    if (slot) {
-      slot.textContent = hanzi;
+    const slot=resultSlots[foundCount];
+    if(slot){
+      slot.textContent=hanzi;
       slot.classList.add("filled");
-      void slot.offsetWidth;              // 强制重排，触发动画
+      void slot.offsetWidth;
       slot.classList.add("pop");
-      setTimeout(() => slot.classList.remove("pop"), 400);
+      setTimeout(()=>slot.classList.remove("pop"),350);
     }
-
     foundCount++;
     updateFoundLabel();
-
-    if (foundCount >= currentLevel.target) {
-      setTimeout(() => triggerWin(), 300);
-    }
-  }, 420);
+    if(foundCount>=currentLevel.target) setTimeout(triggerWin,300);
+  },420);
 }
 
-function doWrong(bd) {
-  sfxWrong();
+function doWrong(bd){
+  sfxBad();
   errorCount++;
-
-  // 扣5秒
-  timeLeft = Math.max(0, timeLeft - 5);
+  timeLeft=Math.max(0,timeLeft-5);
   updateTimerBar();
 
-  // 进度条闪红
-  const bar = document.getElementById("timer-bar");
-  bar.style.transition = "none";
-  bar.style.background = "#EF4444";
-  setTimeout(() => {
-    bar.style.transition = "";
-    applyStyle(currentLevel.radical);
-  }, 400);
+  const bar=document.getElementById("timer-bar");
+  bar.style.transition="none";
+  bar.style.background="#EF4444";
+  setTimeout(()=>{bar.style.transition="";updateTimerBar();},450);
 
-  // 方块抖动动画
   bd.el.classList.add("anim-wrong");
-  bd.el.style.pointerEvents = "none";    // 动画期间禁止重复点击
-  setTimeout(() => {
+  bd.el.style.pointerEvents="none";
+  setTimeout(()=>{
     bd.el.classList.remove("anim-wrong");
-    bd.el.style.pointerEvents = "";
-    bd.el.style.background = "";
-    bd.el.style.borderColor = "";
-  }, 380);
+    bd.el.style.pointerEvents="";
+    bd.el.style.background="";
+    bd.el.style.borderColor="";
+  },380);
 }
 
-function updateFoundLabel() {
-  document.getElementById("found-label").textContent =
+function updateFoundLabel(){
+  document.getElementById("found-label").textContent=
     `已找到 ${foundCount} / ${currentLevel.target}`;
 }
 
-// ══════════════════════════════════════════════
-// 9. 计时器
-// ══════════════════════════════════════════════
-function startTimer() {
+// ══════════════════════════════════════
+// 计时器
+// ══════════════════════════════════════
+function startTimer(){
   clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    if (gameOver) { clearInterval(timerInterval); return; }
+  timerInterval=setInterval(()=>{
+    if(gameOver){clearInterval(timerInterval);return;}
     timeLeft--;
-    if (timeLeft <= 15) sfxTick();
+    if(timeLeft<=15) sfxTick();
     updateTimerBar();
-    if (timeLeft <= 0) {
-      clearInterval(timerInterval);
-      triggerFail();
-    }
-  }, 1000);
+    if(timeLeft<=0){clearInterval(timerInterval);triggerFail();}
+  },1000);
 }
 
-function updateTimerBar() {
-  const pct = Math.max(0, timeLeft / totalTime) * 100;
-  document.getElementById("timer-bar").style.width = pct + "%";
-  const m = Math.floor(timeLeft / 60);
-  const s = timeLeft % 60;
-  document.getElementById("timer-text").textContent =
+function updateTimerBar(){
+  const pct=Math.max(0,timeLeft/totalTime)*100;
+  const bar=document.getElementById("timer-bar");
+  bar.style.width=pct+"%";
+  const m=Math.floor(timeLeft/60), s=timeLeft%60;
+  document.getElementById("timer-text").textContent=
     `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
-  if (timeLeft <= 15) {
-    document.getElementById("timer-bar").style.background = "#EF4444";
-  } else if (timeLeft <= totalTime * 0.4) {
-    document.getElementById("timer-bar").style.background = "#F59E0B";
-  }
+  if(timeLeft<=15) bar.style.background="#EF4444";
+  else if(timeLeft<=totalTime*0.4) bar.style.background="#F59E0B";
 }
 
-// ══════════════════════════════════════════════
-// 10. 通关 / 失败
-// ══════════════════════════════════════════════
-function calcStars() {
-  if (errorCount === 0 && timeLeft / totalTime > 0.5) return 3;
-  if (errorCount <= 2 && timeLeft > 0)                return 2;
+// ══════════════════════════════════════
+// 通关 / 失败
+// ══════════════════════════════════════
+function calcStars(){
+  if(errorCount===0&&timeLeft/totalTime>0.5) return 3;
+  if(errorCount<=2&&timeLeft>0)             return 2;
   return 1;
 }
 
-function triggerWin() {
-  if (gameOver) return;
-  gameOver = true;
-  clearInterval(timerInterval);
-  sfxWin();
-
-  const stars = calcStars();
-  saveStars(currentLevel.id, stars);
-
-  document.getElementById("win-stars").textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
-  document.getElementById("win-sub").textContent   =
-    `错误 ${errorCount} 次，剩余时间 ${timeLeft} 秒`;
-
-  const hasNext = currentLevelIdx < LEVELS.length - 1;
-  document.getElementById("btn-win-next").style.display = hasNext ? "" : "none";
-  showOverlay("overlay-win");
+function triggerWin(){
+  if(gameOver) return;
+  gameOver=true; clearInterval(timerInterval); sfxWin();
+  const stars=calcStars();
+  saveStars(currentLevel.id,stars);
+  document.getElementById("win-stars").textContent="★".repeat(stars)+"☆".repeat(3-stars);
+  document.getElementById("win-sub").textContent=`错误 ${errorCount} 次，剩余 ${timeLeft} 秒`;
+  document.getElementById("btn-win-next").style.display=
+    currentLevelIdx<LEVELS.length-1?"":"none";
+  showOv("overlay-win");
 }
 
-function triggerFail() {
-  if (gameOver) return;
-  gameOver = true;
-  sfxFail();
-
-  document.getElementById("fail-sub").textContent =
+function triggerFail(){
+  if(gameOver) return;
+  gameOver=true; sfxFail();
+  document.getElementById("fail-sub").textContent=
     `已找到 ${foundCount} / ${currentLevel.target} 个`;
-
-  // 列出所有正确字根→合成字
-  const radMap  = RADICAL_MAP[currentLevel.radical];
-  const answers = Object.entries(radMap)
-    .filter(([, v]) => v !== null)
-    .map(([k, v]) => `${currentLevel.radical} + ${k} = ${v}`)
+  const radMap=RADICAL_MAP[currentLevel.radical];
+  const ans=Object.entries(radMap)
+    .filter(([,v])=>v!==null)
+    .map(([k,v])=>`${currentLevel.radical} + ${k} = ${v}`)
     .join("\n");
-  const ansDiv = document.getElementById("fail-answers");
-  ansDiv.textContent = "正确答案：\n" + answers;
-
-  showOverlay("overlay-fail");
+  document.getElementById("fail-answers").textContent="正确答案：\n"+ans;
+  showOv("overlay-fail");
 }
 
-function showOverlay(id) { document.getElementById(id).classList.add("show"); }
-function hideOverlay(id) { document.getElementById(id).classList.remove("show"); }
+function showOv(id){document.getElementById(id).classList.add("show");}
+function hideOv(id){document.getElementById(id).classList.remove("show");}
 
-function goMenu() {
+function goMenu(){
   clearInterval(timerInterval);
-  hideOverlay("overlay-win");
-  hideOverlay("overlay-fail");
+  hideOv("overlay-win"); hideOv("overlay-fail");
   document.getElementById("screen-game").classList.remove("active");
-  document.getElementById("screen-menu").style.display = "";
+  document.getElementById("screen-menu").style.display="";
   renderMenu();
 }
 
-// 按钮绑定
-document.getElementById("btn-back").addEventListener("click", goMenu);
-document.getElementById("btn-win-menu").addEventListener("click", goMenu);
-document.getElementById("btn-fail-menu").addEventListener("click", goMenu);
-document.getElementById("btn-win-next").addEventListener("click", () => {
-  hideOverlay("overlay-win");
-  startLevel(currentLevelIdx + 1);
+document.getElementById("btn-back").addEventListener("click",goMenu);
+document.getElementById("btn-win-menu").addEventListener("click",goMenu);
+document.getElementById("btn-fail-menu").addEventListener("click",goMenu);
+document.getElementById("btn-win-next").addEventListener("click",()=>{
+  hideOv("overlay-win"); startLevel(currentLevelIdx+1);
 });
-document.getElementById("btn-fail-retry").addEventListener("click", () => {
-  hideOverlay("overlay-fail");
-  startLevel(currentLevelIdx);
+document.getElementById("btn-fail-retry").addEventListener("click",()=>{
+  hideOv("overlay-fail"); startLevel(currentLevelIdx);
 });
 
-// ══════════════════════════════════════════════
-// 11. 初始化
-// ══════════════════════════════════════════════
 renderMenu();
 </script>
 </body>
