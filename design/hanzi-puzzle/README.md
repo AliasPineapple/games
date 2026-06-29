@@ -5,21 +5,22 @@
 ## 目录说明
 
 ```
-hanzi-puzzle/
-├── design/                    <- 策划案目录
+design/hanzi-puzzle/           <- 当前策划目录（在 games/design/ 下）
+├── README.md
+├── design/
 │   └── game-design-document.md   <- 完整策划案
 ├── assets/                    <- 美术/音效资源（待填充）
 └── docs/                      <- 开发文档（待填充）
 
-../../h5/hanzi-puzzle/         <- 游戏工程代码目录
+../h5/hanzi-puzzle/            <- 游戏工程代码目录（在 games/h5/ 下）
 └── index.html                 <- 主游戏文件（待创建）
 ```
 
 ## 快速导航
 
 - [完整策划案](design/game-design-document.md)
-- [游戏工程代码](../../h5/hanzi-puzzle/)
-- [关联游戏：汉字找一找](../../h5/hanzi-find/)
+- [游戏工程代码](../h5/hanzi-puzzle/)
+- [关联游戏：汉字找一找](../h5/hanzi-find/)
 
 ## 核心玩法
 

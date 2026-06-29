@@ -1,6 +1,6 @@
 # 汉字拼图消消乐 - 工程目录
 
-> 策划案：[../../hanzi-puzzle/design/game-design-document.md](../../hanzi-puzzle/design/game-design-document.md)
+> 策划案：[../../design/hanzi-puzzle/design/game-design-document.md](../../design/hanzi-puzzle/design/game-design-document.md)
 
 ## 文件说明
 
