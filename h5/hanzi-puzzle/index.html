@@ -238,6 +238,7 @@
   <div class="overlay-box">
     <div class="overlay-title" style="color:#EF4444">时间到！</div>
     <div class="overlay-sub" id="fail-sub"></div>
+    <div id="fail-answers" style="margin-bottom:14px;font-size:13px;color:#475569;line-height:1.8;text-align:left"></div>
     <div class="ov-btns">
       <button class="ov-btn secondary" id="btn-fail-menu">关卡选择</button>
       <button class="ov-btn primary" id="btn-fail-retry">重试</button>
@@ -253,10 +254,10 @@
 // RADICAL_MAP[目标偏旁][字根] = 合成汉字（null 表示干扰项）
 const RADICAL_MAP = {
   "氵": {
-    "青":"清","可":"河","胡":"湖","木":"沐","曰":"汩",
+    "青":"清","可":"河","胡":"湖","木":"沐","曰":"汩","少":"沙",
     "方":null,"天":null,"心":null,"日":null,"土":null,
     "石":null,"月":null,"马":null,"目":null,"口":null,
-    "斥":null,"少":null,"才":null,"生":null,"乔":null,
+    "斥":null,"才":null,"生":null,"乔":null,"鸟":null,
   },
   "木": {
     "目":"相","木":"林","口":"杏","乔":"桥","奉":"棒",
@@ -487,11 +488,13 @@ function buildBlocks() {
   board.innerHTML = "";
   blockData = [];
 
-  // 计算方框尺寸：尽量撑满 board-wrap，留 6px padding
-  const wrapW = boardWrap.clientWidth  || window.innerWidth;
-  const wrapH = boardWrap.clientHeight || (window.innerHeight - 260);
-  const boardW = wrapW  - 12;
-  const boardH = wrapH  - 12;
+  // 计算方框尺寸：固定方块间距为 BLOCK_SIZE-14（大量重叠），
+  // 方框宽 = 4列 * 步距 + 边距，高度按比例
+  const STEP    = BLOCK_SIZE - 14;  // 42px，方块大量重叠
+  const NCOLS   = 4;
+  const NROWS   = 4;
+  const boardW  = NCOLS * STEP + BLOCK_SIZE + MARGIN * 2;  // 约 240px
+  const boardH  = NROWS * STEP + BLOCK_SIZE + MARGIN * 2;  // 约 240px
   board.style.width  = boardW + "px";
   board.style.height = boardH + "px";
 
@@ -505,24 +508,15 @@ function buildBlocks() {
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
 
-  // 目标：至少叠 3 层。用网格+随机偏移铺满方框。
-  // 先计算单层能放多少块
-  const cols     = Math.floor((boardW - MARGIN) / (BLOCK_SIZE - 8));  // -8 让块有重叠
-  const rows     = Math.floor((boardH - MARGIN) / (BLOCK_SIZE - 8));
-  const perLayer = cols * rows;
-
-  // 我们要铺 pool.length 个块（25+），尽量保证 3 层以上密度
-  // 如果 pool 不够填 3 层，则重复 pool 补满（保持字根种类）
+  // 用固定 NCOLS x NROWS 网格铺 4 层位置
   let positions = [];
-  for (let layer = 0; layer < 4; layer++) {   // 铺 4 层位置
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        // 网格基础位置 + 随机抖动
-        const bx = MARGIN + c * (BLOCK_SIZE - 8) + randInt(-6, 6);
-        const by = MARGIN + r * (BLOCK_SIZE - 8) + randInt(-6, 6);
-        // 限制在方框内
-        const x = clamp(bx, MARGIN, boardW - BLOCK_SIZE - MARGIN);
-        const y = clamp(by, MARGIN, boardH - BLOCK_SIZE - MARGIN);
+  for (let layer = 0; layer < 4; layer++) {
+    for (let r = 0; r < NROWS; r++) {
+      for (let c = 0; c < NCOLS; c++) {
+        const bx = MARGIN + c * STEP + randInt(-5, 5);
+        const by = MARGIN + r * STEP + randInt(-5, 5);
+        const x  = clamp(bx, MARGIN, boardW - BLOCK_SIZE - MARGIN);
+        const y  = clamp(by, MARGIN, boardH - BLOCK_SIZE - MARGIN);
         positions.push({x, y, layer});
       }
     }
@@ -675,7 +669,8 @@ function doCorrect(bd) {
   const hanzi = RADICAL_MAP[currentLevel.radical][bd.radical];
 
   setTimeout(() => {
-    bd.el.remove();
+    // 动画结束后彻底从 DOM 移除，不留残影
+    if (bd.el.parentNode) bd.el.parentNode.removeChild(bd.el);
     updateClickability();
 
     // 填入结果格子
@@ -694,7 +689,7 @@ function doCorrect(bd) {
     if (foundCount >= currentLevel.target) {
       setTimeout(() => triggerWin(), 300);
     }
-  }, 400);
+  }, 420);
 }
 
 function doWrong(bd) {
@@ -792,8 +787,19 @@ function triggerFail() {
   if (gameOver) return;
   gameOver = true;
   sfxFail();
+
   document.getElementById("fail-sub").textContent =
-    `已找到 ${foundCount} / ${currentLevel.target} 个，再试试！`;
+    `已找到 ${foundCount} / ${currentLevel.target} 个`;
+
+  // 列出所有正确字根→合成字
+  const radMap  = RADICAL_MAP[currentLevel.radical];
+  const answers = Object.entries(radMap)
+    .filter(([, v]) => v !== null)
+    .map(([k, v]) => `${currentLevel.radical} + ${k} = ${v}`)
+    .join("\n");
+  const ansDiv = document.getElementById("fail-answers");
+  ansDiv.textContent = "正确答案：\n" + answers;
+
   showOverlay("overlay-fail");
 }
 
