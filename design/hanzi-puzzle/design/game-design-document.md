@@ -3,8 +3,8 @@
 > 版本：v1.1
 > 日期：2026-06-29
 > 状态：待开发
-> 关联工程：`../h5/hanzi-puzzle/`（相对 games/ 根目录）
-> 关联游戏：`../h5/hanzi-find/`（汉字找一找，知识互补）
+> 关联工程：`../../../h5/hanzi-puzzle/`（相对本文件位置：design/hanzi-puzzle/design/ 上三级到 games/，再进 h5/）
+> 关联游戏：`../../../h5/hanzi-find/`（汉字找一找，知识互补）
 
 ---
 
@@ -482,4 +482,5 @@ const LEVELS = [
 ---
 
 *策划案由 Hermes Agent 生成 | 2026-06-29*
+*策划案路径：/home/zx/hermes_agent/games/design/hanzi-puzzle/design/game-design-document.md*
 *工程目录：/home/zx/hermes_agent/games/h5/hanzi-puzzle/*
