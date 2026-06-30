@@ -189,6 +189,24 @@
       54%{transform:translateX(-6px) rotate(-1.5deg)}
       72%{transform:translateX(6px) rotate(1.5deg)}
     }
+    /* 错误方块下沉后的"已翻过"态：半透明灰色，沉底 */
+    .block-sunk{
+      opacity:.18!important;
+      filter:grayscale(100%)!important;
+      pointer-events:none!important;
+      background:#F1F5F9!important;
+      border-color:#CBD5E1!important;
+      color:#94A3B8!important;
+    }
+    /* 死局自动解锁：高亮闪烁提示 */
+    @keyframes unlockHint{
+      0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,0)}
+      40%{box-shadow:0 0 0 8px rgba(251,191,36,.5)}
+      70%{box-shadow:0 0 0 4px rgba(251,191,36,.2)}
+    }
+    .anim-unlock{
+      animation:unlockHint .7s ease-out;
+    }
 
     /* ══════════════════════════════════════
        通关/失败遮罩
@@ -526,6 +544,7 @@ function startLevel(idx){
   gameOver    = false;
   blockData   = [];
   resultSlots = [];
+  _checkingDeadlock = false;
 
   // 切换界面
   document.getElementById("screen-menu").style.display = "none";
@@ -727,7 +746,13 @@ function updateClickability(){
     bd.isClickable = (ratio < 0.70);
     bd.el.classList.toggle("block-disabled", !bd.isClickable);
   });
+  // 每次遮挡状态变化后检查是否产生死局，有则自动解锁
+  // （注意：checkDeadlock 内部不再递归调用 updateClickability，避免无限递归）
+  checkDeadlock();
 }
+
+// 递归保护标志
+let _checkingDeadlock = false;
 
 // ══════════════════════════════════════════════════════
 // 【11】点击处理
@@ -788,16 +813,79 @@ function doWrong(bd){
     updateTimerBar();
   }, 450);
 
-  // 方块抖动
+  // 方块抖动，抖完后"下沉"到最底层（zIndex=1），变为灰色半透明
+  // 这样它就不会再遮挡任何方块，死锁问题从根本上消除
   bd.el.classList.add("anim-wrong");
   bd.el.style.pointerEvents = "none";
   setTimeout(() => {
     bd.el.classList.remove("anim-wrong");
-    bd.el.style.background   = "";
-    bd.el.style.borderColor  = "";
-    bd.el.style.color        = "";
-    bd.el.style.pointerEvents = "";
+    // 下沉：z-index 设为最低，低于所有方块（最低层的方块 zIndex 从10起）
+    bd.zIndex = 1;
+    bd.el.style.zIndex = 1;
+    // 视觉标记为"已翻过/沉底"态
+    bd.el.classList.add("block-sunk");
+    // 重新计算遮挡：该方块沉底后不再压住任何人
+    updateClickability();
   }, 390);
+}
+
+// ══════════════════════════════════════════════════════
+// 【11b】死局检测 + 自动解锁
+//
+// 触发条件：updateClickability 后，所有存活方块里
+// 没有任何"可点击的正确方块"，但游戏还未结束。
+//
+// 解锁策略：找到所有被遮住的正确方块，
+// 对其中一个（选被遮最少的），把压住它的所有干扰方块下沉。
+// ══════════════════════════════════════════════════════
+function checkDeadlock(){
+  if(gameOver || _checkingDeadlock) return;
+  const clickableCorrect = blockData.filter(bd => !bd.removed && bd.isCorrect && bd.isClickable);
+  if(clickableCorrect.length > 0) return; // 没有死锁
+
+  // 找出所有被遮住的正确方块（未移除、正确、不可点击）
+  const blockedCorrect = blockData.filter(bd => !bd.removed && bd.isCorrect && !bd.isClickable);
+  if(blockedCorrect.length === 0) return; // 正确方块都已消除，即将通关
+
+  // 选被遮挡最轻的正确方块（最容易解锁）
+  const active = blockData.filter(bd => !bd.removed);
+  let bestTarget = null, bestRatio = Infinity;
+  for(const bd of blockedCorrect){
+    const uppers = active.filter(o => o !== bd && o.zIndex > bd.zIndex);
+    const r = coveredRatio(bd, uppers);
+    if(r < bestRatio){ bestRatio = r; bestTarget = bd; }
+  }
+  if(!bestTarget) return;
+
+  // 把所有压在 bestTarget 上方的干扰方块（isCorrect=false）全部下沉
+  const active2 = blockData.filter(bd => !bd.removed);
+  const blockers = active2.filter(o => {
+    if(o === bestTarget || o.isCorrect) return false;
+    if(o.zIndex <= bestTarget.zIndex) return false;
+    // 判断是否真的在空间上重叠
+    const or = getBlockRect(o);
+    const tr = getBlockRect(bestTarget);
+    return or.x < tr.x + tr.w && or.x + or.w > tr.x &&
+           or.y < tr.y + tr.h && or.y + or.h > tr.y;
+  });
+
+  blockers.forEach(o => {
+    o.zIndex = 1;
+    o.el.style.zIndex = 1;
+    o.el.classList.add("block-sunk");
+  });
+
+  // 用递归保护标志刷新遮挡（不再触发 checkDeadlock）
+  _checkingDeadlock = true;
+  try { updateClickability(); } finally { _checkingDeadlock = false; }
+
+  // 对现在露出的 bestTarget 播放高亮提示动画
+  setTimeout(() => {
+    if(!bestTarget.removed && bestTarget.isClickable){
+      bestTarget.el.classList.add("anim-unlock");
+      setTimeout(() => bestTarget.el.classList.remove("anim-unlock"), 750);
+    }
+  }, 50);
 }
 
 function updateFoundLabel(){
