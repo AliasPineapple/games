@@ -840,52 +840,74 @@ function doWrong(bd){
 // ══════════════════════════════════════════════════════
 function checkDeadlock(){
   if(gameOver || _checkingDeadlock) return;
-  const clickableCorrect = blockData.filter(bd => !bd.removed && bd.isCorrect && bd.isClickable);
-  if(clickableCorrect.length > 0) return; // 没有死锁
 
-  // 找出所有被遮住的正确方块（未移除、正确、不可点击）
-  const blockedCorrect = blockData.filter(bd => !bd.removed && bd.isCorrect && !bd.isClickable);
-  if(blockedCorrect.length === 0) return; // 正确方块都已消除，即将通关
+  // 循环解锁，直到有可点击的正确方块，或无法再解锁为止
+  // 每次循环解锁一个被遮住的正确方块的阻挡者
+  let unlockTarget = null; // 记录最后一次解锁的目标（用于高亮提示）
+  let iterations = 0;
+  const MAX_ITER = 10; // 防止极端情况下无限循环
 
-  // 选被遮挡最轻的正确方块（最容易解锁）
-  const active = blockData.filter(bd => !bd.removed);
-  let bestTarget = null, bestRatio = Infinity;
-  for(const bd of blockedCorrect){
-    const uppers = active.filter(o => o !== bd && o.zIndex > bd.zIndex);
-    const r = coveredRatio(bd, uppers);
-    if(r < bestRatio){ bestRatio = r; bestTarget = bd; }
-  }
-  if(!bestTarget) return;
+  while(iterations++ < MAX_ITER){
+    const clickableCorrect = blockData.filter(bd => !bd.removed && bd.isCorrect && bd.isClickable);
+    if(clickableCorrect.length > 0) break; // 已有可点击的正确方块，退出
 
-  // 把所有压在 bestTarget 上方的干扰方块（isCorrect=false）全部下沉
-  const active2 = blockData.filter(bd => !bd.removed);
-  const blockers = active2.filter(o => {
-    if(o === bestTarget || o.isCorrect) return false;
-    if(o.zIndex <= bestTarget.zIndex) return false;
-    // 判断是否真的在空间上重叠
-    const or = getBlockRect(o);
-    const tr = getBlockRect(bestTarget);
-    return or.x < tr.x + tr.w && or.x + or.w > tr.x &&
-           or.y < tr.y + tr.h && or.y + or.h > tr.y;
-  });
+    const blockedCorrect = blockData.filter(bd => !bd.removed && bd.isCorrect && !bd.isClickable);
+    if(blockedCorrect.length === 0) break; // 正确方块都已消除，即将通关
 
-  blockers.forEach(o => {
-    o.zIndex = 1;
-    o.el.style.zIndex = 1;
-    o.el.classList.add("block-sunk");
-  });
-
-  // 用递归保护标志刷新遮挡（不再触发 checkDeadlock）
-  _checkingDeadlock = true;
-  try { updateClickability(); } finally { _checkingDeadlock = false; }
-
-  // 对现在露出的 bestTarget 播放高亮提示动画
-  setTimeout(() => {
-    if(!bestTarget.removed && bestTarget.isClickable){
-      bestTarget.el.classList.add("anim-unlock");
-      setTimeout(() => bestTarget.el.classList.remove("anim-unlock"), 750);
+    // 选被遮挡最轻的正确方块
+    const active = blockData.filter(bd => !bd.removed);
+    let bestTarget = null, bestRatio = Infinity;
+    for(const bd of blockedCorrect){
+      const uppers = active.filter(o => o !== bd && o.zIndex > bd.zIndex);
+      const r = coveredRatio(bd, uppers);
+      if(r < bestRatio){ bestRatio = r; bestTarget = bd; }
     }
-  }, 50);
+    if(!bestTarget) break;
+
+    // 把所有压在 bestTarget 上方且与其空间重叠的干扰方块全部下沉
+    const blockers = active.filter(o => {
+      if(o === bestTarget || o.isCorrect) return false;
+      if(o.zIndex <= bestTarget.zIndex) return false;
+      const or = getBlockRect(o);
+      const tr = getBlockRect(bestTarget);
+      return or.x < tr.x + tr.w && or.x + or.w > tr.x &&
+             or.y < tr.y + tr.h && or.y + or.h > tr.y;
+    });
+
+    if(blockers.length === 0) break; // 没有可下沉的阻挡者，退出避免死循环
+
+    blockers.forEach(o => {
+      o.zIndex = 1;
+      o.el.style.zIndex = 1;
+      o.el.classList.add("block-sunk");
+    });
+
+    // 重算遮挡（不触发新的 checkDeadlock）
+    _checkingDeadlock = true;
+    try {
+      const active2 = blockData.filter(bd => !bd.removed);
+      active2.forEach(bd => {
+        const uppers = active2.filter(o => o !== bd && o.zIndex > bd.zIndex);
+        const ratio  = coveredRatio(bd, uppers);
+        bd.isClickable = (ratio < 0.70);
+        bd.el.classList.toggle("block-disabled", !bd.isClickable);
+      });
+    } finally {
+      _checkingDeadlock = false;
+    }
+
+    unlockTarget = bestTarget;
+  }
+
+  // 对最后一次解锁出来的正确方块播放金色高亮提示
+  if(unlockTarget){
+    setTimeout(() => {
+      if(!unlockTarget.removed && unlockTarget.isClickable){
+        unlockTarget.el.classList.add("anim-unlock");
+        setTimeout(() => unlockTarget.el.classList.remove("anim-unlock"), 750);
+      }
+    }, 50);
+  }
 }
 
 function updateFoundLabel(){
