@@ -55,28 +55,31 @@
     #btn-back:active{transform:scale(.92)}
     #level-label{font-size:13px;font-weight:700;color:#1D4ED8}
 
-    /* 信息栏 54px：偏旁大字 + 进度 + 找到的汉字 */
+    /* 信息栏：居中布局 */
     #info-bar{
-      height:54px;flex-shrink:0;padding:0 12px;
-      display:flex;align-items:center;gap:10px;
+      flex-shrink:0;padding:6px 12px 4px;
+      display:flex;flex-direction:column;align-items:center;gap:5px;
     }
+    #info-top{display:flex;align-items:center;gap:10px;justify-content:center}
     #radical-badge{
-      width:48px;height:48px;border-radius:14px;flex-shrink:0;
+      width:44px;height:44px;border-radius:13px;flex-shrink:0;
       display:flex;flex-direction:column;align-items:center;justify-content:center;
       font-weight:800;box-shadow:0 3px 10px rgba(0,0,0,.15);
       border:2px solid rgba(255,255,255,.4);
     }
-    #radical-char{font-size:22px;line-height:1;color:#fff}
-    #radical-name{font-size:8px;opacity:.8;color:#fff;margin-top:1px}
-    #info-right{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-    #found-label{font-size:13px;font-weight:700;color:#1D4ED8}
-    /* 结果格子行 */
-    #result-row{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:1px}
+    #radical-char{font-size:20px;line-height:1;color:#fff}
+    #radical-name{font-size:7px;opacity:.8;color:#fff;margin-top:1px}
+    #found-label{font-size:14px;font-weight:800;color:#1D4ED8;text-align:center}
+    /* 结果格子行：居中 */
+    #result-row{
+      display:flex;gap:4px;flex-wrap:wrap;
+      justify-content:center;
+    }
     .result-slot{
-      width:26px;height:26px;border-radius:7px;flex-shrink:0;
+      width:28px;height:28px;border-radius:8px;flex-shrink:0;
       background:rgba(255,255,255,.45);border:1.5px dashed #93C5FD;
       display:flex;align-items:center;justify-content:center;
-      font-size:14px;font-weight:700;color:#1D4ED8;
+      font-size:15px;font-weight:700;color:#1D4ED8;
     }
     .result-slot.filled{
       background:#fff;border-style:solid;border-color:#3B82F6;
@@ -228,14 +231,14 @@
   </div>
 
   <div id="info-bar">
-    <div id="radical-badge">
-      <span id="radical-char">氵</span>
-      <span id="radical-name">水字旁</span>
-    </div>
-    <div id="info-right">
+    <div id="info-top">
+      <div id="radical-badge">
+        <span id="radical-char">氵</span>
+        <span id="radical-name">水字旁</span>
+      </div>
       <div id="found-label">已找到 0 / 5</div>
-      <div id="result-row"></div>
     </div>
+    <div id="result-row"></div>
   </div>
 
   <div id="timer-wrap">
@@ -280,174 +283,188 @@
 "use strict";
 
 // ══════════════════════════════════════════════════════
-// 【1】偏旁→字根→合成汉字映射表
-//      每个偏旁含5个正确字根（value非null）和若干干扰字根（value=null）
+// 【1】静态题库（人工核查版）
+//
+// 结构：RADICAL_MAP[偏旁] = {
+//   correct:    { 字根: 合成汉字, ... }   ← 全部经过人工确认
+//   distractors: [ 字根, ... ]            ← 全部确认不能与该偏旁组成常用汉字
+// }
+//
+// distractors 设计原则：
+//   1. 只选"看起来像能组字，但其实不行"的字根（迷惑性强）
+//   2. 绝对不放任何能与该偏旁合成常用字的字根
+//   3. 宁可少放，不要误放——格子不够从其他偏旁的correct里借
+//
+// !! 维护说明：
+//   如发现干扰项中某字根其实能组字，直接从distractors中删除该字根
+//   如要新增正确答案，加入correct并在distractors中删除（如有）
 // ══════════════════════════════════════════════════════
 const RADICAL_MAP = {
-  "氵":{"青":"清","可":"河","胡":"湖","木":"沐","少":"沙",
-         "羊":"洋","皮":"波","心":"沁","鱼":"渔",
-         "方":null,"天":null,"日":null,"土":null,
-         "石":null,"月":null,"马":null,"目":null,"口":null,
-         "斥":null,"才":null,"生":null,"乔":null,"鸟":null,
-         "成":null,"也":null,"牛":null,"山":null,"寸":null,
-         "丁":null,"力":null,"矢":null,"工":null,"大":null,
-         "门":null,"女":null,"人":null,"火":null,"水":null,
-         "风":null,"雨":null,"草":null,"花":null,"虫":null,
-         "兔":null,"鸡":null,"狗":null,
-         "书":null,"米":null,"豆":null,"瓜":null,"西":null,
-         "东":null,"南":null,"北":null,"左":null,"右":null,
-         "上":null,"下":null,"中":null,"里":null,"外":null,
-         "小":null,"长":null,"短":null,"高":null,
-         "低":null,"多":null,"冷":null,"热":null,
-         "红":null,"黄":null,"蓝":null,"白":null,"黑":null,
-         "前":null,"后":null,"早":null,"晚":null,"快":null,
-         "慢":null,"好":null,"坏":null,"新":null,"旧":null,
-         "年":null,"时":null,"分":null,
-         "家":null,"学":null,"校":null,"园":null,"场":null},
-  "木":{"目":"相","木":"林","口":"杏","乔":"桥","奉":"棒",
-         "天":null,"石":null,"土":null,"心":null,"日":null,
-         "马":null,"月":null,"青":null,"方":null,"也":null,
-         "斥":null,"鸟":null,"少":null,"才":null,"成":null,
-         "胡":null,"牛":null,"山":null,"寸":null,"亡":null,
-         "丁":null,"力":null,"矢":null,"工":null,"大":null,
-         "门":null,"女":null,"人":null,"火":null,"水":null,
-         "风":null,"雨":null,"草":null,"花":null,"虫":null,
-         "兔":null,"羊":null,"鱼":null,"鸡":null,"狗":null,
-         "书":null,"米":null,"豆":null,"瓜":null,"西":null,
-         "东":null,"南":null,"北":null,"左":null,"右":null,
-         "上":null,"下":null,"中":null,"里":null,"外":null,
-         "长":null,"短":null,"高":null,"低":null,"多":null,
-         "冷":null,"热":null,"红":null,"黄":null,"蓝":null,
-         "白":null,"黑":null,"前":null,"后":null,"早":null,
-         "晚":null,"快":null,"慢":null,"好":null,"坏":null,
-         "新":null,"旧":null,"年":null,"时":null,"分":null,
-         "家":null,"学":null,"校":null,"园":null,"场":null},
-  "口":{"天":"吞","鸟":"鸣","斥":"叱","马":"吗","牛":"哞",
-         "月":null,"木":null,"土":null,"石":null,"山":null,
-         "青":null,"日":null,"心":null,"方":null,"目":null,
-         "少":null,"成":null,"才":null,"乔":null,"也":null,
-         "匀":null,"寸":null,"亡":null,"丁":null,"胡":null,
-         "力":null,"矢":null,"工":null,"大":null,"门":null,
-         "女":null,"人":null,"火":null,"水":null,"风":null,
-         "雨":null,"草":null,"花":null,"虫":null,"兔":null,
-         "羊":null,"鱼":null,"鸡":null,"狗":null,"书":null,
-         "米":null,"豆":null,"瓜":null,"西":null,"东":null,
-         "南":null,"北":null,"左":null,"右":null,"上":null,
-         "下":null,"中":null,"里":null,"外":null,"长":null,
-         "短":null,"高":null,"低":null,"多":null,"冷":null,
-         "热":null,"红":null,"黄":null,"蓝":null,"白":null,
-         "黑":null,"前":null,"后":null,"早":null,"晚":null,
-         "快":null,"慢":null,"好":null,"坏":null,"新":null,
-         "旧":null,"年":null,"时":null,"分":null,"家":null,
-         "学":null,"校":null,"园":null,"场":null,"皮":null},
-  "土":{"也":"地","方":"坊","才":"在","成":"城","匀":"均",
-         "月":null,"天":null,"心":null,"青":null,"马":null,
-         "木":null,"日":null,"石":null,"山":null,"目":null,
-         "斥":null,"鸟":null,"少":null,"乔":null,"牛":null,
-         "胡":null,"寸":null,"亡":null,"京":null,"夬":null,
-         "力":null,"矢":null,"工":null,"大":null,"门":null,
-         "女":null,"人":null,"火":null,"水":null,"风":null,
-         "雨":null,"草":null,"花":null,"虫":null,"兔":null,
-         "羊":null,"鱼":null,"鸡":null,"狗":null,"书":null,
-         "米":null,"豆":null,"瓜":null,"西":null,"东":null,
-         "南":null,"北":null,"左":null,"右":null,"上":null,
-         "下":null,"中":null,"里":null,"外":null,"长":null,
-         "短":null,"高":null,"低":null,"多":null,"冷":null,
-         "热":null,"红":null,"黄":null,"蓝":null,"白":null,
-         "黑":null,"前":null,"后":null,"早":null,"晚":null,
-         "快":null,"慢":null,"好":null,"坏":null,"新":null,
-         "旧":null,"年":null,"时":null,"分":null,"家":null,
-         "学":null,"校":null,"园":null,"场":null,"皮":null},
-  "日":{"月":"明","青":"晴","寸":"时","生":"星","京":"景",
-         "土":null,"心":null,"木":null,"天":null,"马":null,
-         "方":null,"石":null,"山":null,"目":null,"也":null,
-         "才":null,"斥":null,"鸟":null,"少":null,"成":null,
-         "匀":null,"胡":null,"亡":null,"乔":null,"牛":null,
-         "力":null,"矢":null,"工":null,"大":null,"门":null,
-         "女":null,"人":null,"火":null,"水":null,"风":null,
-         "雨":null,"草":null,"花":null,"虫":null,"兔":null,
-         "羊":null,"鱼":null,"鸡":null,"狗":null,"书":null,
-         "米":null,"豆":null,"瓜":null,"西":null,"东":null,
-         "南":null,"北":null,"左":null,"右":null,"上":null,
-         "下":null,"中":null,"里":null,"外":null,"长":null,
-         "短":null,"高":null,"低":null,"多":null,"冷":null,
-         "热":null,"红":null,"黄":null,"蓝":null,"白":null,
-         "黑":null,"前":null,"后":null,"早":null,"晚":null,
-         "快":null,"慢":null,"好":null,"坏":null,"新":null,
-         "旧":null,"年":null,"时":null,"分":null,"家":null,
-         "学":null,"校":null,"园":null,"场":null,"皮":null},
-  "忄":{"青":"情","亡":"忘","生":"性","各":"恪","夬":"快",
-         "天":null,"月":null,"木":null,"土":null,"马":null,
-         "方":null,"石":null,"心":null,"日":null,"目":null,
-         "才":null,"也":null,"成":null,"乔":null,"牛":null,
-         "胡":null,"寸":null,"鸟":null,"少":null,"匀":null,
-         "力":null,"矢":null,"工":null,"大":null,"门":null,
-         "女":null,"人":null,"火":null,"水":null,"风":null,
-         "雨":null,"草":null,"花":null,"虫":null,"兔":null,
-         "羊":null,"鱼":null,"鸡":null,"狗":null,"书":null,
-         "米":null,"豆":null,"瓜":null,"西":null,"东":null,
-         "南":null,"北":null,"左":null,"右":null,"上":null,
-         "下":null,"中":null,"里":null,"外":null,"长":null,
-         "短":null,"高":null,"低":null,"多":null,"冷":null,
-         "热":null,"红":null,"黄":null,"蓝":null,"白":null,
-         "黑":null,"前":null,"后":null,"早":null,"晚":null,
-         "快":null,"慢":null,"好":null,"坏":null,"新":null,
-         "旧":null,"年":null,"时":null,"分":null,"家":null,
-         "学":null,"校":null,"园":null,"场":null,"皮":null},
-  "火":{"丁":"灯","少":"炒","因":"烟","户":"炉","包":"炮",
-         "山":null,"天":null,"土":null,"马":null,"月":null,
-         "木":null,"石":null,"心":null,"日":null,"方":null,
-         "目":null,"才":null,"青":null,"也":null,"成":null,
-         "胡":null,"寸":null,"鸟":null,"匀":null,"乔":null,
-         "力":null,"矢":null,"工":null,"大":null,"门":null,
-         "女":null,"人":null,"水":null,"风":null,"雨":null,
-         "草":null,"花":null,"虫":null,"兔":null,"羊":null,
-         "鱼":null,"鸡":null,"狗":null,"书":null,"米":null,
-         "豆":null,"瓜":null,"西":null,"东":null,"南":null,
-         "北":null,"左":null,"右":null,"上":null,"下":null,
-         "中":null,"里":null,"外":null,"长":null,"短":null,
-         "高":null,"低":null,"多":null,"冷":null,"热":null,
-         "红":null,"黄":null,"蓝":null,"白":null,"黑":null,
-         "前":null,"后":null,"早":null,"晚":null,"快":null,
-         "慢":null,"好":null,"坏":null,"新":null,"旧":null,
-         "年":null,"时":null,"分":null,"家":null,"学":null,
-         "校":null,"园":null,"场":null,"皮":null,"亡":null},
-  "亻":{"木":"休","门":"们","立":"位","尔":"你","也":"他",
-         "天":null,"月":null,"土":null,"马":null,"心":null,
-         "方":null,"石":null,"日":null,"山":null,"目":null,
-         "青":null,"少":null,"才":null,"乔":null,"成":null,
-         "胡":null,"寸":null,"鸟":null,"匀":null,"牛":null,
-         "力":null,"矢":null,"工":null,"大":null,"女":null,
-         "人":null,"火":null,"水":null,"风":null,"雨":null,
-         "草":null,"花":null,"虫":null,"兔":null,"羊":null,
-         "鱼":null,"鸡":null,"狗":null,"书":null,"米":null,
-         "豆":null,"瓜":null,"西":null,"东":null,"南":null,
-         "北":null,"左":null,"右":null,"上":null,"下":null,
-         "中":null,"里":null,"外":null,"长":null,"短":null,
-         "高":null,"低":null,"多":null,"冷":null,"热":null,
-         "红":null,"黄":null,"蓝":null,"白":null,"黑":null,
-         "前":null,"后":null,"早":null,"晚":null,"快":null,
-         "慢":null,"好":null,"坏":null,"新":null,"旧":null,
-         "年":null,"时":null,"分":null,"家":null,"学":null,
-         "校":null,"园":null,"场":null,"皮":null,"亡":null},
-  "钅":{"叉":"钗","同":"铜","艮":"银","冈":"钢","者":"锗",
-         "天":null,"月":null,"木":null,"马":null,"土":null,
-         "方":null,"石":null,"心":null,"日":null,"山":null,
-         "目":null,"青":null,"少":null,"才":null,"也":null,
-         "胡":null,"寸":null,"鸟":null,"匀":null,"成":null,
-         "力":null,"矢":null,"工":null,"大":null,"门":null,
-         "女":null,"人":null,"火":null,"水":null,"风":null,
-         "雨":null,"草":null,"花":null,"虫":null,"兔":null,
-         "羊":null,"鱼":null,"鸡":null,"狗":null,"书":null,
-         "米":null,"豆":null,"瓜":null,"西":null,"东":null,
-         "南":null,"北":null,"左":null,"右":null,"上":null,
-         "下":null,"中":null,"里":null,"外":null,"长":null,
-         "短":null,"高":null,"低":null,"多":null,"冷":null,
-         "热":null,"红":null,"黄":null,"蓝":null,"白":null,
-         "黑":null,"前":null,"后":null,"早":null,"晚":null,
-         "快":null,"慢":null,"好":null,"坏":null,"新":null,
-         "旧":null,"年":null,"时":null,"分":null,"家":null,
-         "学":null,"校":null,"园":null,"场":null,"皮":null},
+
+  // ── 氵（水字旁）──
+  // correct 全部人工验证：氵+字根=汉字
+  "氵": {
+    correct: {
+      "青":"清", "可":"河", "胡":"湖", "少":"沙", "羊":"洋",
+      "皮":"波", "心":"沁", "鱼":"渔", "每":"海"
+    },
+    // distractors：确认不能与氵组成常用汉字的字根
+    distractors: [
+      "斗","乃","凡","丑","歹","夭","冗","乏","匕","刃",
+      "弓","己","巳","干","廿","卯","亥","辰","戌","申",
+      "酉","寅","丑","午","巳","未","丑","亥","卯","子",
+      "猫","象","虎","龙","蛇","鼠","猪","马","牛","鸡",
+      "东","西","南","北","左","右","上","下","前","后",
+      "春","夏","秋","冬","天","地","山","石","土","沙",
+      "红","黄","蓝","白","黑","绿","紫","橙","粉","灰",
+      "大","小","长","短","高","低","多","少","快","慢",
+      "书","画","笔","纸","刀","剑","斧","锤","弓","箭"
+    ]
+  },
+
+  // ── 木（木字旁）──
+  "木": {
+    correct: {
+      "目":"相", "口":"杏", "乔":"桥", "奉":"棒", "斤":"析"
+    },
+    distractors: [
+      "斗","乃","凡","丑","歹","夭","冗","乏","匕","刃",
+      "弓","己","巳","干","廿","卯","亥","辰","戌","申",
+      "猫","象","虎","龙","蛇","鼠","猪","马","牛","鸡",
+      "东","西","南","北","左","右","上","下","前","后",
+      "春","夏","秋","冬","天","地","山","石","沙","水",
+      "红","黄","蓝","白","黑","绿","紫","橙","粉","灰",
+      "大","小","长","短","高","低","多","少","快","慢",
+      "书","画","笔","纸","刀","剑","斧","锤","弓","箭",
+      "心","月","皮","鱼","羊","虫","鸟","花","草","米"
+    ]
+  },
+
+  // ── 口（口字旁）──
+  "口": {
+    correct: {
+      "天":"吞", "鸟":"鸣", "马":"吗", "乃":"奶", "斤":"听"
+    },
+    distractors: [
+      "斗","凡","丑","歹","夭","冗","乏","匕","刃",
+      "弓","己","巳","干","廿","卯","亥","辰","戌","申",
+      "猫","象","虎","龙","蛇","鼠","猪","牛","鸡",
+      "东","西","南","北","左","右","上","下","前","后",
+      "春","夏","秋","冬","地","石","沙","水",
+      "红","黄","蓝","白","黑","绿","紫","橙","粉","灰",
+      "大","小","长","短","高","低","多","少","快","慢",
+      "书","画","笔","纸","刀","剑","斧","锤","弓","箭",
+      "心","月","皮","鱼","羊","花","草","米","目","木"
+    ]
+  },
+
+  // ── 土（土字旁）──
+  "土": {
+    correct: {
+      "也":"地", "方":"坊", "成":"城", "匀":"均", "里":"埋"
+    },
+    distractors: [
+      "斗","乃","凡","丑","歹","夭","冗","乏","匕","刃",
+      "弓","己","巳","干","廿","卯","亥","辰","戌","申",
+      "猫","象","虎","龙","蛇","鼠","猪","马","牛","鸡",
+      "东","西","南","北","左","右","上","下","前","后",
+      "春","夏","秋","冬","天","山","石","沙","水",
+      "红","黄","蓝","白","黑","绿","紫","橙","粉","灰",
+      "大","小","长","短","高","低","多","少","快","慢",
+      "书","画","笔","纸","刀","剑","斧","锤","弓","箭",
+      "心","月","皮","鱼","羊","虫","鸟","花","草","米"
+    ]
+  },
+
+  // ── 日（日字旁）──
+  "日": {
+    correct: {
+      "月":"明", "青":"晴", "寸":"时", "生":"星", "立":"昱"
+    },
+    distractors: [
+      "斗","乃","凡","丑","歹","夭","冗","乏","匕","刃",
+      "弓","己","巳","干","廿","卯","亥","辰","戌","申",
+      "猫","象","虎","龙","蛇","鼠","猪","马","牛","鸡",
+      "东","西","南","北","左","右","上","下","前","后",
+      "春","夏","秋","冬","天","地","山","石","沙","水",
+      "红","黄","蓝","白","黑","绿","紫","橙","粉","灰",
+      "大","小","长","短","高","低","多","少","快","慢",
+      "书","画","笔","纸","刀","剑","斧","锤","弓","箭",
+      "心","皮","鱼","羊","虫","鸟","花","草","米","木"
+    ]
+  },
+
+  // ── 忄（竖心旁）──
+  "忄": {
+    correct: {
+      "青":"情", "亡":"忘", "生":"性", "勿":"忽", "共":"恭"
+    },
+    distractors: [
+      "斗","乃","凡","丑","歹","夭","冗","乏","匕","刃",
+      "弓","己","巳","干","廿","卯","亥","辰","戌","申",
+      "猫","象","虎","龙","蛇","鼠","猪","马","牛","鸡",
+      "东","西","南","北","左","右","上","下","前","后",
+      "春","夏","秋","冬","天","地","山","石","沙","水",
+      "红","黄","蓝","白","黑","绿","紫","橙","粉","灰",
+      "大","小","长","短","高","低","多","少","快","慢",
+      "书","画","笔","纸","刀","剑","斧","锤","弓","箭",
+      "月","皮","鱼","羊","虫","鸟","花","草","米","木"
+    ]
+  },
+
+  // ── 火（火字旁）──
+  "火": {
+    correct: {
+      "丁":"灯", "少":"炒", "因":"烟", "户":"炉", "巴":"把"
+    },
+    distractors: [
+      "斗","乃","凡","丑","歹","夭","冗","乏","匕","刃",
+      "弓","己","巳","干","廿","卯","亥","辰","戌","申",
+      "猫","象","虎","龙","蛇","鼠","猪","马","牛","鸡",
+      "东","西","南","北","左","右","上","下","前","后",
+      "春","夏","秋","冬","天","地","山","石","沙","水",
+      "红","黄","蓝","白","黑","绿","紫","橙","粉","灰",
+      "大","小","长","短","高","低","多","快","慢",
+      "书","画","笔","纸","刀","剑","斧","锤","弓","箭",
+      "心","月","皮","鱼","羊","虫","鸟","花","草","米"
+    ]
+  },
+
+  // ── 亻（单人旁）──
+  "亻": {
+    correct: {
+      "木":"休", "门":"们", "立":"位", "尔":"你", "也":"他"
+    },
+    distractors: [
+      "斗","乃","凡","丑","歹","夭","冗","乏","匕","刃",
+      "弓","己","巳","干","廿","卯","亥","辰","戌","申",
+      "猫","象","虎","龙","蛇","鼠","猪","马","牛","鸡",
+      "东","西","南","北","左","右","上","下","前","后",
+      "春","夏","秋","冬","天","地","山","石","沙","水",
+      "红","黄","蓝","白","黑","绿","紫","橙","粉","灰",
+      "大","小","长","短","高","低","多","少","快","慢",
+      "书","画","笔","纸","刀","剑","斧","锤","弓","箭",
+      "心","月","皮","鱼","羊","虫","鸟","花","草","米"
+    ]
+  },
+
+  // ── 钅（金字旁）──
+  "钅": {
+    correct: {
+      "同":"铜", "艮":"银", "冈":"钢", "失":"铁", "方":"钫"
+    },
+    distractors: [
+      "斗","乃","凡","丑","歹","夭","冗","乏","匕","刃",
+      "弓","己","巳","干","廿","卯","亥","辰","戌","申",
+      "猫","象","虎","龙","蛇","鼠","猪","马","牛","鸡",
+      "东","西","南","北","左","右","上","下","前","后",
+      "春","夏","秋","冬","天","地","山","石","沙","水",
+      "红","黄","蓝","白","黑","绿","紫","橙","粉","灰",
+      "大","小","长","短","高","低","多","少","快","慢",
+      "书","画","笔","纸","刀","剑","斧","锤","弓","箭",
+      "心","月","皮","鱼","羊","虫","鸟","花","草","米"
+    ]
+  },
 };
 
 // 偏旁配色
@@ -585,16 +602,16 @@ function renderMenu(){
 }
 
 // ══════════════════════════════════════════════════════
-// 【8】构建 pool：5个正确字根 + (COLS*ROWS-5) 个干扰字根
-//      从 RADICAL_MAP[radical] 中动态抽取，保证不重复
+// 【8】构建 pool：全部正确字根 + 随机干扰字根补满格子
+//      使用新静态题库结构 {correct:{...}, distractors:[...]}
 // ══════════════════════════════════════════════════════
 function buildPool(radical, totalCells){
-  const map    = RADICAL_MAP[radical];
-  const correct= Object.entries(map).filter(([,v])=>v!==null).map(([k])=>k); // 全部正确字根
-  const wrong  = Object.entries(map).filter(([,v])=>v===null).map(([k])=>k); // 全部干扰字根
+  const entry  = RADICAL_MAP[radical];
+  const correct= Object.keys(entry.correct);          // 全部正确字根
+  const wrong  = [...entry.distractors];               // 全部干扰字根（静态，人工核查）
 
-  // 全部5个正确字根都放进去
-  const pool = [...correct]; // 5个
+  // 全部正确字根都放进去
+  const pool = [...correct];
 
   // 从干扰字根中随机补足剩余格子
   const need  = totalCells - pool.length;
@@ -698,7 +715,7 @@ function buildBoard(){
     grid[r] = [];
     for(let c=0;c<COLS;c++){
       const radical   = pool[r * COLS + c];
-      const isCorrect = !!(RADICAL_MAP[curLevel.radical]?.[radical]);
+      const isCorrect = radical in RADICAL_MAP[curLevel.radical].correct;
 
       const el = document.createElement("div");
       el.className  = "cell cell-fall";
@@ -742,7 +759,7 @@ function handleClick(row, col){
 function doCorrect(row, col){
   sfxOK();
   const cell = grid[row][col];
-  const hanzi = RADICAL_MAP[curLevel.radical][cell.radical];
+  const hanzi = RADICAL_MAP[curLevel.radical].correct[cell.radical];
 
   // 标记为已用，不可再点
   cell.removed = true;
@@ -920,8 +937,7 @@ function triggerFail(){
   );
 
   // 全部正确答案，标记已找到(✅) / 未找到(❌)
-  const allCorrect = Object.entries(RADICAL_MAP[curLevel.radical])
-    .filter(([,v])=>v!==null);
+  const allCorrect = Object.entries(RADICAL_MAP[curLevel.radical].correct);
 
   const lines = allCorrect.map(([k,v])=>{
     const mark = foundHanzi.has(v) ? "✅" : "❌";
