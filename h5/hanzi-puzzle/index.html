@@ -132,14 +132,18 @@
                  opacity .15s;
     }
     .cell:active:not(.cell-wrong-lock){transform:scale(.82)}
-    /* 正确消除：缩放飞走 */
-    .cell-correct{
-      animation:cellCorrect .32s ease-in forwards;
+    /* 正确消除：原地变灰淡出，保留占位 */
+    .cell-used{
       pointer-events:none;
+      background:#F1F5F9 !important;
+      border-color:#E2E8F0 !important;
+      color:#CBD5E1 !important;
+      box-shadow:none !important;
+      animation:cellUsed .25s ease-out forwards;
     }
-    @keyframes cellCorrect{
-      0%  {transform:scale(1.2);opacity:1}
-      100%{transform:scale(0);opacity:0}
+    @keyframes cellUsed{
+      0%  {transform:scale(1.15);opacity:1}
+      100%{transform:scale(1);opacity:0.22}
     }
     /* 错误：红色抖动，结束后恢复 */
     .cell-wrong{
@@ -280,14 +284,15 @@
 // ══════════════════════════════════════════════════════
 const RADICAL_MAP = {
   "氵":{"青":"清","可":"河","胡":"湖","木":"沐","少":"沙",
-         "皮":null,"方":null,"天":null,"心":null,"日":null,"土":null,
+         "羊":"洋","皮":"波",
+         "方":null,"天":null,"心":null,"日":null,"土":null,
          "石":null,"月":null,"马":null,"目":null,"口":null,
          "斥":null,"才":null,"生":null,"乔":null,"鸟":null,
          "成":null,"也":null,"牛":null,"山":null,"寸":null,
          "丁":null,"力":null,"矢":null,"工":null,"大":null,
          "门":null,"女":null,"人":null,"火":null,"水":null,
          "风":null,"雨":null,"草":null,"花":null,"虫":null,
-         "兔":null,"羊":null,"鱼":null,"鸡":null,"狗":null,
+         "兔":null,"鱼":null,"鸡":null,"狗":null,
          "书":null,"米":null,"豆":null,"瓜":null,"西":null,
          "东":null,"南":null,"北":null,"左":null,"右":null,
          "上":null,"下":null,"中":null,"里":null,"外":null,
@@ -464,10 +469,10 @@ const RADICAL_STYLE = {
 //  time   : 限时秒数
 // ══════════════════════════════════════════════════════
 const LEVELS = [
-  // 第1批：氵（水字旁）  6×6 / 8×8 / 10×10
-  {id:"1",radical:"氵",radName:"水字旁",cols:6,target:5,time:90 },
-  {id:"2",radical:"氵",radName:"水字旁",cols:8,target:5,time:110},
-  {id:"3",radical:"氵",radName:"水字旁",cols:10,target:5,time:140},
+  // 第1批：氵（水字旁）  6×6 / 8×8 / 10×10，共7个正确答案
+  {id:"1",radical:"氵",radName:"水字旁",cols:6,target:7,time:100},
+  {id:"2",radical:"氵",radName:"水字旁",cols:8,target:7,time:120},
+  {id:"3",radical:"氵",radName:"水字旁",cols:10,target:7,time:150},
   // 第2批：木（木字旁）
   {id:"4",radical:"木",radName:"木字旁",cols:6,target:5,time:90 },
   {id:"5",radical:"木",radName:"木字旁",cols:8,target:5,time:110},
@@ -719,9 +724,8 @@ function buildBoard(){
 function handleClick(row, col){
   const cell = grid[row]?.[col];
   if(!cell || !cell.el || gameOver) return;
-  // 空格或正在动画中则忽略
-  if(cell.el.classList.contains("cell-correct") ||
-     cell.el.classList.contains("cell-wrong-lock")) return;
+  // 已消除或正在抖动中则忽略
+  if(cell.removed || cell.el.classList.contains("cell-wrong-lock")) return;
 
   if(cell.isCorrect){
     doCorrect(row, col);
@@ -736,32 +740,26 @@ function doCorrect(row, col){
   const cell = grid[row][col];
   const hanzi = RADICAL_MAP[curLevel.radical][cell.radical];
 
-  cell.el.classList.add("cell-correct");
+  // 标记为已用，不可再点
+  cell.removed = true;
+  cell.el.classList.remove("cell-wrong","cell-wrong-lock");
+  cell.el.classList.add("cell-used");
 
-  setTimeout(()=>{
-    // 从 DOM 移除
-    cell.el.remove();
-    grid[row][col] = null; // 标记为空格
+  // 填入结果格（立即，不需要等动画）
+  const slot = resultSlots[foundCount];
+  if(slot){
+    slot.textContent = hanzi;
+    slot.classList.add("filled");
+    void slot.offsetWidth;
+    slot.classList.add("pop");
+    setTimeout(()=>slot.classList.remove("pop"), 320);
+  }
+  foundCount++;
+  updateFoundLabel();
 
-    // 该列上方所有方块向下掉落一格
-    dropColumn(col);
-
-    // 填入结果格
-    const slot = resultSlots[foundCount];
-    if(slot){
-      slot.textContent = hanzi;
-      slot.classList.add("filled");
-      void slot.offsetWidth;
-      slot.classList.add("pop");
-      setTimeout(()=>slot.classList.remove("pop"), 320);
-    }
-    foundCount++;
-    updateFoundLabel();
-
-    if(foundCount >= curLevel.target){
-      setTimeout(triggerWin, 350);
-    }
-  }, 320);
+  if(foundCount >= curLevel.target){
+    setTimeout(triggerWin, 350);
+  }
 }
 
 // ── 掉落：消除 (row,col) 后，该列第 0..row-1 行的方块依次下移 ──
@@ -911,11 +909,22 @@ function triggerFail(){
   if(gameOver) return;
   gameOver=true; sfxFail();
   document.getElementById("fail-sub").textContent = `已找到 ${foundCount} / ${curLevel.target} 个`;
-  const ans = Object.entries(RADICAL_MAP[curLevel.radical])
-    .filter(([,v])=>v!==null)
-    .map(([k,v])=>`${curLevel.radical} + ${k} = ${v}`)
-    .join("\n");
-  document.getElementById("fail-answers").textContent = "正确答案：\n"+ans;
+
+  // 找出哪些字根已被玩家找到（resultSlots 中已填入的汉字）
+  const foundHanzi = new Set(
+    resultSlots.filter(s=>s.classList.contains("filled")).map(s=>s.textContent)
+  );
+
+  // 全部正确答案，标记已找到(✅) / 未找到(❌)
+  const allCorrect = Object.entries(RADICAL_MAP[curLevel.radical])
+    .filter(([,v])=>v!==null);
+
+  const lines = allCorrect.map(([k,v])=>{
+    const mark = foundHanzi.has(v) ? "✅" : "❌";
+    return `${mark} ${curLevel.radical} + ${k} = ${v}`;
+  });
+
+  document.getElementById("fail-answers").textContent = lines.join("\n");
   showOverlay("overlay-fail");
 }
 
