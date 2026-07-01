@@ -194,9 +194,10 @@
     .ov-sub{font-size:12px;color:#64748B;margin-bottom:10px;line-height:1.6}
     .star-row{font-size:34px;margin-bottom:12px;letter-spacing:5px}
     .fail-answers{
-      margin-bottom:10px;font-size:12px;color:#475569;line-height:1.9;
-      text-align:left;max-height:100px;overflow-y:auto;
+      margin-bottom:10px;font-size:12px;color:#475569;line-height:2;
+      text-align:left;max-height:180px;overflow-y:auto;
       background:#F8FAFC;border-radius:10px;padding:6px 10px;
+      white-space:pre-line;
     }
     .ov-btns{display:flex;gap:8px;justify-content:center}
     .ov-btn{
@@ -284,24 +285,24 @@
 // ══════════════════════════════════════════════════════
 const RADICAL_MAP = {
   "氵":{"青":"清","可":"河","胡":"湖","木":"沐","少":"沙",
-         "羊":"洋","皮":"波",
-         "方":null,"天":null,"心":null,"日":null,"土":null,
+         "羊":"洋","皮":"波","心":"沁","鱼":"渔",
+         "方":null,"天":null,"日":null,"土":null,
          "石":null,"月":null,"马":null,"目":null,"口":null,
          "斥":null,"才":null,"生":null,"乔":null,"鸟":null,
          "成":null,"也":null,"牛":null,"山":null,"寸":null,
          "丁":null,"力":null,"矢":null,"工":null,"大":null,
          "门":null,"女":null,"人":null,"火":null,"水":null,
          "风":null,"雨":null,"草":null,"花":null,"虫":null,
-         "兔":null,"鱼":null,"鸡":null,"狗":null,
+         "兔":null,"鸡":null,"狗":null,
          "书":null,"米":null,"豆":null,"瓜":null,"西":null,
          "东":null,"南":null,"北":null,"左":null,"右":null,
          "上":null,"下":null,"中":null,"里":null,"外":null,
-         "大":null,"小":null,"长":null,"短":null,"高":null,
-         "低":null,"多":null,"少":null,"冷":null,"热":null,
+         "小":null,"长":null,"短":null,"高":null,
+         "低":null,"多":null,"冷":null,"热":null,
          "红":null,"黄":null,"蓝":null,"白":null,"黑":null,
          "前":null,"后":null,"早":null,"晚":null,"快":null,
          "慢":null,"好":null,"坏":null,"新":null,"旧":null,
-         "年":null,"月":null,"日":null,"时":null,"分":null,
+         "年":null,"时":null,"分":null,
          "家":null,"学":null,"校":null,"园":null,"场":null},
   "木":{"目":"相","木":"林","口":"杏","乔":"桥","奉":"棒",
          "天":null,"石":null,"土":null,"心":null,"日":null,
@@ -469,22 +470,20 @@ const RADICAL_STYLE = {
 //  time   : 限时秒数
 // ══════════════════════════════════════════════════════
 const LEVELS = [
-  // 第1批：氵（水字旁）  6×6 / 8×8 / 10×10，共7个正确答案
-  {id:"1",radical:"氵",radName:"水字旁",cols:6,target:7,time:100},
-  {id:"2",radical:"氵",radName:"水字旁",cols:8,target:7,time:120},
-  {id:"3",radical:"氵",radName:"水字旁",cols:10,target:7,time:150},
-  // 第2批：木（木字旁）
-  {id:"4",radical:"木",radName:"木字旁",cols:6,target:5,time:90 },
-  {id:"5",radical:"木",radName:"木字旁",cols:8,target:5,time:110},
-  {id:"6",radical:"木",radName:"木字旁",cols:10,target:5,time:140},
-  // 第3批：口（口字旁）
-  {id:"7",radical:"口",radName:"口字旁",cols:6,target:5,time:90 },
-  {id:"8",radical:"口",radName:"口字旁",cols:8,target:5,time:110},
-  {id:"9",radical:"口",radName:"口字旁",cols:10,target:5,time:140},
-  // 第4批：土（土字旁）
-  {id:"10",radical:"土",radName:"土字旁",cols:6,target:5,time:90 },
-  {id:"11",radical:"土",radName:"土字旁",cols:8,target:5,time:110},
-  {id:"12",radical:"土",radName:"土字旁",cols:10,target:5,time:140},
+  // 每关换一个偏旁，网格逐渐变大，干扰项越来越多
+  // cols=6  → 36格，正确答案藏在35个干扰项中（初级）
+  // cols=8  → 64格，正确答案藏在55个干扰项中（中级）
+  // cols=10 → 100格，正确答案藏在91个干扰项中（高级）
+  // cols=12 → 144格（挑战级）
+  {id:"1", radical:"氵",radName:"水字旁",cols:6, target:9, time:110},
+  {id:"2", radical:"木",radName:"木字旁",cols:7, target:5, time:100},
+  {id:"3", radical:"口",radName:"口字旁",cols:8, target:5, time:120},
+  {id:"4", radical:"土",radName:"土字旁",cols:8, target:5, time:120},
+  {id:"5", radical:"日",radName:"日字旁",cols:9, target:5, time:140},
+  {id:"6", radical:"忄",radName:"竖心旁",cols:9, target:5, time:140},
+  {id:"7", radical:"火",radName:"火字旁",cols:10,target:5, time:160},
+  {id:"8", radical:"亻",radName:"单人旁",cols:10,target:5, time:160},
+  {id:"9", radical:"钅",radName:"金字旁",cols:11,target:5, time:180},
 ];
 
 // ══════════════════════════════════════════════════════
@@ -559,7 +558,12 @@ function shuffle(arr){
 // ══════════════════════════════════════════════════════
 // 【7】关卡选择界面
 // ══════════════════════════════════════════════════════
-const DIFF_LABEL = {6:"初级 6×6", 8:"中级 8×8", 10:"高级 10×10"};
+function diffLabel(cols){
+  if(cols<=6)  return `初级 ${cols}×${cols}`;
+  if(cols<=8)  return `中级 ${cols}×${cols}`;
+  if(cols<=10) return `高级 ${cols}×${cols}`;
+  return `挑战 ${cols}×${cols}`;
+}
 
 function renderMenu(){
   const grid = document.getElementById("level-grid");
@@ -573,7 +577,7 @@ function renderMenu(){
       <div class="lnum">第 ${lv.id} 关</div>
       <div class="lrad" style="color:${s.accent};font-size:26px;line-height:1.2">${lv.radical}</div>
       <div class="lname">${lv.radName}</div>
-      <div class="ldiff">${DIFF_LABEL[lv.cols]}</div>
+      <div class="ldiff">${diffLabel(lv.cols)}</div>
       <div class="lstars">${"★".repeat(st)}${"☆".repeat(3-st)}</div>`;
     btn.addEventListener("click",()=>startLevel(idx));
     grid.appendChild(btn);
@@ -631,7 +635,7 @@ function startLevel(idx){
   const s = RADICAL_STYLE[curLevel.radical];
   document.getElementById("radical-badge").style.background = s.bg;
   document.getElementById("timer-bar").style.background     = s.bg;
-  document.getElementById("level-label").textContent        = `第 ${curLevel.id} 关 · ${DIFF_LABEL[curLevel.cols]}`;
+  document.getElementById("level-label").textContent        = `第 ${curLevel.id} 关 · ${diffLabel(curLevel.cols)}`;
   document.getElementById("radical-char").textContent       = curLevel.radical;
   document.getElementById("radical-name").textContent       = curLevel.radName;
 
