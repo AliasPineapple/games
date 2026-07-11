@@ -2630,27 +2630,30 @@ const CHAR_DB = (() => {
 //  time   : 限时秒数
 // ══════════════════════════════════════════════════════
 const LEVELS = [
-  // 每关换一个偏旁，网格逐渐变大，干扰项越来越多
-  // cols=6  → 36格，正确答案藏在35个干扰项中（初级）
-  // cols=8  → 64格，正确答案藏在55个干扰项中（中级）
-  // cols=10 → 100格，正确答案藏在91个干扰项中（高级）
+  // cols=4  → 16格，找3个正确答案（入门级）
+  // cols=5  → 25格，找4个正确答案（入门级）
+  // cols=6  → 36格，找5个正确答案（初级）
+  // cols=8  → 64格（中级）
+  // cols=10 → 100格（高级）
   // cols=12 → 144格（挑战级）
-  {id:"1", radical:"氵",radName:"水字旁",cols:6,  time:110},
-  {id:"2", radical:"木",radName:"木字旁",cols:7,  time:100},
-  {id:"3", radical:"口",radName:"口字旁",cols:8,  time:120},
-  {id:"4", radical:"土",radName:"土字旁",cols:8,  time:120},
-  {id:"5", radical:"日",radName:"日字旁",cols:9,  time:140},
-  {id:"6", radical:"忄",radName:"竖心旁",cols:9,  time:140},
+  {id:"1",  radical:"氵",radName:"水字旁",cols:4,  time:60,  targetCount:3},
+  {id:"2",  radical:"木",radName:"木字旁",cols:5,  time:80,  targetCount:4},
+  {id:"3",  radical:"氵",radName:"水字旁",cols:6,  time:110},
+  {id:"4",  radical:"木",radName:"木字旁",cols:7,  time:100},
+  {id:"5",  radical:"口",radName:"口字旁",cols:8,  time:120},
+  {id:"6",  radical:"土",radName:"土字旁",cols:8,  time:120},
+  {id:"7",  radical:"日",radName:"日字旁",cols:9,  time:140},
+  {id:"8",  radical:"忄",radName:"竖心旁",cols:9,  time:140},
 
-  {id:"7", radical:"火",radName:"火字旁",cols:10, time:160},
-  {id:"8", radical:"亻",radName:"单人旁",cols:10, time:160},
-  {id:"9", radical:"钅",radName:"金字旁",cols:11, time:180},
-  {id:"10",radical:"讠",radName:"言字旁",cols:11, time:180},
-  {id:"11",radical:"艹",radName:"草字头",cols:12, time:200},
-  {id:"12",radical:"宀",radName:"宝盖头",cols:12, time:200},
-  {id:"13",radical:"扌",radName:"提手旁",cols:12, time:200},
-  {id:"14",radical:"女",radName:"女字旁",cols:12, time:200},
-  {id:"15",radical:"石",radName:"石字旁",cols:12, time:200},
+  {id:"9",  radical:"火",radName:"火字旁",cols:10, time:160},
+  {id:"10", radical:"亻",radName:"单人旁",cols:10, time:160},
+  {id:"11", radical:"钅",radName:"金字旁",cols:11, time:180},
+  {id:"12", radical:"讠",radName:"言字旁",cols:11, time:180},
+  {id:"13", radical:"艹",radName:"草字头",cols:12, time:200},
+  {id:"14", radical:"宀",radName:"宝盖头",cols:12, time:200},
+  {id:"15", radical:"扌",radName:"提手旁",cols:12, time:200},
+  {id:"16", radical:"女",radName:"女字旁",cols:12, time:200},
+  {id:"17", radical:"石",radName:"石字旁",cols:12, time:200},
 ];
 
 // ══════════════════════════════════════════════════════
@@ -2749,6 +2752,7 @@ function shuffle(arr){
 // 【7】关卡选择界面
 // ══════════════════════════════════════════════════════
 function diffLabel(cols){
+  if(cols<=5)  return `入门 ${cols}×${cols}`;
   if(cols<=6)  return `初级 ${cols}×${cols}`;
   if(cols<=8)  return `中级 ${cols}×${cols}`;
   if(cols<=10) return `高级 ${cols}×${cols}`;
@@ -2786,11 +2790,11 @@ function renderMenu(){
 // ══════════════════════════════════════════════════════
 const TARGET_CORRECT = 5;  // 每关需要找到的正确答案数
 
-function buildPool(radical, totalCells){
+function buildPool(radical, totalCells, targetCount){
   const allCorrect = Object.keys(RADICAL_DB[radical]);
 
-  // 随机抽取 TARGET_CORRECT 个正确字根（不超过字库总数）
-  const pickCount = Math.min(TARGET_CORRECT, allCorrect.length, totalCells - 1);
+  // 随机抽取 targetCount 个正确字根（不超过字库总数）
+  const pickCount = Math.min(targetCount, allCorrect.length, totalCells - 1);
   const correct   = shuffle([...allCorrect]).slice(0, pickCount);
 
   // 全局字根候选池（排除本关偏旁）
@@ -2833,7 +2837,7 @@ function startLevel(idx){
 
   curLevelIdx = idx;
   curLevel    = LEVELS[idx];
-  curLevel.target = Math.min(TARGET_CORRECT, Object.keys(RADICAL_DB[curLevel.radical]).length); // 动态读取答案数
+  curLevel.target = Math.min(curLevel.targetCount ?? TARGET_CORRECT, Object.keys(RADICAL_DB[curLevel.radical]).length); // 动态读取答案数
   foundCount  = 0;
   errorCount  = 0;
   gameOver    = false;
@@ -2906,7 +2910,7 @@ function buildBoard(){
   boardEl.style.gridTemplateRows    = `repeat(${ROWS}, ${CELL_SIZE}px)`;
 
   // 生成 pool
-  const pool = buildPool(curLevel.radical, COLS * ROWS);
+  const pool = buildPool(curLevel.radical, COLS * ROWS, curLevel.target);
   // 记录本关实际出现的正确字根（供 triggerFail 使用）
   currentCorrectRoots = pool.filter(r => r in RADICAL_DB[curLevel.radical]);
 
