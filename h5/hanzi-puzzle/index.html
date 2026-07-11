@@ -325,6 +325,17 @@
 // 保证：偏旁+字根=合成字 均来自IDS字形分解数据，无手工造假
 // ══════════════════════════════════════════════════════
 const RADICAL_DB = {
+  // ── 月 ──
+  "月": {
+    "干":"肝", "市":"肺", "北":"背", "退":"腿",
+    "户":"肩", "却":"脚", "匈":"胸", "要":"腰",
+    "复":"腹", "夫":"肤", "田":"胃", "佥":"脸",
+  },
+  // ── 目 ──
+  "目": {
+    "垂":"睡", "争":"睁", "艮":"眼", "青":"睛",
+    "木":"相", "夬":"快", "莫":"暮", "乍":"眨",
+  },
   // ── 氵 ──
   "氵": {
     "殳":"没",
@@ -2636,8 +2647,8 @@ const LEVELS = [
   // cols=8  → 64格（中级）
   // cols=10 → 100格（高级）
   // cols=12 → 144格（挑战级）
-  {id:"1",  radical:"口",radName:"口字旁",cols:4,  time:60,  targetCount:3},
-  {id:"2",  radical:"土",radName:"土字旁",cols:5,  time:80,  targetCount:4},
+  {id:"1",  radical:"月",radName:"月字旁",cols:4,  time:60,  targetCount:3},
+  {id:"2",  radical:"目",radName:"目字旁",cols:5,  time:80,  targetCount:4},
   {id:"3",  radical:"氵",radName:"水字旁",cols:6,  time:110},
   {id:"4",  radical:"木",radName:"木字旁",cols:7,  time:100},
   {id:"5",  radical:"口",radName:"口字旁",cols:8,  time:120},
@@ -2720,6 +2731,8 @@ const sfxTick=()=>tone(880,880,0.05,"sine",0.06);
 // 【6】偏旁配色方案
 // ══════════════════════════════════════════════════════
 const RADICAL_STYLE = {
+  "月": { bg:"#0E7490", accent:"#67E8F9" },
+  "目": { bg:"#7C3AED", accent:"#C4B5FD" },
   "氵": { bg:"#3B82F6", accent:"#93C5FD" },
   "木": { bg:"#16A34A", accent:"#86EFAC" },
   "口": { bg:"#EA580C", accent:"#FCA5A1" },
