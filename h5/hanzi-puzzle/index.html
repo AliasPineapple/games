@@ -210,6 +210,31 @@
     .ov-btn:active{transform:scale(.91)}
     .ov-btn.primary{background:#3B82F6;color:#fff;box-shadow:0 3px 10px rgba(59,130,246,.3)}
     .ov-btn.secondary{background:#E2E8F0;color:#475569}
+
+    /* ══ 提示按钮 ══ */
+    #btn-hint{
+      background:#FEF3C7;border:1.5px solid #FCD34D;border-radius:10px;
+      padding:4px 10px;font-size:13px;color:#92400E;cursor:pointer;font-weight:700;
+      display:flex;align-items:center;gap:3px;transition:transform .1s,opacity .2s;
+    }
+    #btn-hint:active{transform:scale(.9)}
+    #btn-hint:disabled{opacity:.38;cursor:not-allowed;transform:none}
+    #hint-count{font-size:11px;font-weight:800}
+
+    /* 提示高亮动画 */
+    @keyframes hintGlow{
+      0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.0);transform:scale(1)}
+      25%     {box-shadow:0 0 0 8px rgba(251,191,36,.6);transform:scale(1.12)}
+      50%     {box-shadow:0 0 0 4px rgba(251,191,36,.4);transform:scale(1.06)}
+      75%     {box-shadow:0 0 0 8px rgba(251,191,36,.6);transform:scale(1.12)}
+    }
+    .cell-hint{
+      animation:hintGlow 1.4s ease-in-out;
+      background:#FEF9C3 !important;
+      border-color:#F59E0B !important;
+      color:#92400E !important;
+      z-index:10;position:relative;
+    }
   </style>
 </head>
 <body>
@@ -227,7 +252,7 @@
   <div id="header">
     <button id="btn-back">← 返回</button>
     <span id="level-label">第1关</span>
-    <span style="width:52px"></span>
+    <button id="btn-hint">💡 <span id="hint-count">×2</span></button>
   </div>
 
   <div id="info-bar">
@@ -2645,6 +2670,7 @@ let timerIv     = null;
 let gameOver    = false;
 let resultSlots = [];
 let currentCorrectRoots = []; // 本关pool里实际出现的正确字根（buildBoard时记录）
+let hintsLeft   = 2;          // 每关免费提示次数
 
 // ══════════════════════════════════════════════════════
 // 【4】本地存档
@@ -2812,8 +2838,10 @@ function startLevel(idx){
   errorCount  = 0;
   gameOver    = false;
   resultSlots = [];
+  hintsLeft   = 2;
   COLS        = curLevel.cols;
   ROWS        = curLevel.cols; // 正方形网格
+  updateHintBtn();
 
   document.getElementById("screen-menu").style.display = "none";
   document.getElementById("screen-game").classList.add("active");
@@ -3092,6 +3120,7 @@ function calcStars(){
 function triggerWin(){
   if(gameOver) return;
   gameOver=true; clearInterval(timerIv); sfxWin();
+  updateHintBtn();
   const stars=calcStars(); saveStars(curLevel.id,stars);
   document.getElementById("win-stars").textContent = "★".repeat(stars)+"☆".repeat(3-stars);
   document.getElementById("win-sub").textContent   = `错误 ${errorCount} 次，剩余 ${timeLeft} 秒`;
@@ -3103,6 +3132,7 @@ function triggerWin(){
 function triggerFail(){
   if(gameOver) return;
   gameOver=true; sfxFail();
+  updateHintBtn();
   document.getElementById("fail-sub").textContent = `已找到 ${foundCount} / ${curLevel.target} 个`;
 
   // 找出哪些字根已被玩家找到（resultSlots 中已填入的汉字）
@@ -3128,6 +3158,42 @@ function showOverlay(id){ document.getElementById(id).classList.add("show"); }
 function hideOverlay(id){ document.getElementById(id).classList.remove("show"); }
 
 // ══════════════════════════════════════════════════════
+// 【15】提示功能（免费2次/关）
+// ══════════════════════════════════════════════════════
+function updateHintBtn(){
+  const btn  = document.getElementById("btn-hint");
+  const cnt  = document.getElementById("hint-count");
+  cnt.textContent = "×" + hintsLeft;
+  btn.disabled    = (hintsLeft <= 0 || gameOver);
+}
+
+function useHint(){
+  if(hintsLeft <= 0 || gameOver) return;
+
+  // 收集棋盘上未消除的正确字根格子
+  const candidates = [];
+  for(let r=0; r<ROWS; r++){
+    for(let c=0; c<COLS; c++){
+      const cell = grid[r][c];
+      if(cell && !cell.removed && cell.isCorrect){
+        candidates.push(cell);
+      }
+    }
+  }
+  if(candidates.length === 0) return; // 所有正确字根已被找到
+
+  // 随机选一个高亮
+  const target = candidates[Math.floor(Math.random() * candidates.length)];
+  target.el.classList.remove("cell-hint"); // 重置（防止连续点）
+  void target.el.offsetWidth;              // 强制重排以重启动画
+  target.el.classList.add("cell-hint");
+  setTimeout(()=> target.el.classList.remove("cell-hint"), 1500);
+
+  hintsLeft--;
+  updateHintBtn();
+}
+
+// ══════════════════════════════════════════════════════
 // 【14】导航
 // ══════════════════════════════════════════════════════
 function goMenu(){
@@ -3139,6 +3205,7 @@ function goMenu(){
 }
 
 document.getElementById("btn-back").addEventListener("click", goMenu);
+document.getElementById("btn-hint").addEventListener("click", useHint);
 document.getElementById("btn-win-menu").addEventListener("click", goMenu);
 document.getElementById("btn-fail-menu").addEventListener("click", goMenu);
 document.getElementById("btn-win-next").addEventListener("click",()=>{
