@@ -1,0 +1,201 @@
+/* pages/game/game.wxss */
+.screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── 顶栏 ── */
+.header {
+  width: 100%;
+  height: 80rpx;
+  flex-shrink: 0;
+  padding: 0 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.btn-back {
+  font-size: 26rpx;
+  color: #fff;
+  background: rgba(255,255,255,.18);
+  padding: 8rpx 20rpx;
+  border-radius: 20rpx;
+}
+.btn-back:active { opacity: 0.7; }
+.level-label {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #fff;
+}
+.btn-hint {
+  font-size: 26rpx;
+  color: #92400E;
+  background: #FEF3C7;
+  border: 2rpx solid #FCD34D;
+  padding: 8rpx 18rpx;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+}
+.btn-hint.disabled { opacity: 0.38; }
+.hint-count { font-size: 22rpx; font-weight: 800; margin-left: 4rpx; }
+
+/* ── 信息栏 ── */
+.info-bar {
+  width: 100%;
+  padding: 8rpx 24rpx;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  flex-shrink: 0;
+}
+.radical-badge {
+  border-radius: 12rpx;
+  padding: 8rpx 16rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 72rpx;
+}
+.radical-char { font-size: 32rpx; color: #fff; font-weight: 700; }
+.radical-name { font-size: 16rpx; color: rgba(255,255,255,.8); margin-top: 2rpx; }
+.timer-wrap { flex: 1; }
+.timer-bar-bg {
+  height: 12rpx;
+  background: rgba(255,255,255,.3);
+  border-radius: 6rpx;
+  overflow: hidden;
+  margin-bottom: 4rpx;
+}
+.timer-bar {
+  height: 100%;
+  border-radius: 6rpx;
+  transition: width 1s linear;
+}
+.timer-text { font-size: 22rpx; color: #fff; font-weight: 700; }
+.found-label { font-size: 28rpx; font-weight: 800; color: #fff; min-width: 60rpx; text-align: right; }
+
+/* ── 结果槽 ── */
+.result-row {
+  display: flex;
+  justify-content: center;
+  gap: 12rpx;
+  padding: 8rpx 20rpx;
+  flex-shrink: 0;
+}
+.result-slot {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 14rpx;
+  border: 3rpx dashed rgba(255,255,255,.5);
+  background: rgba(255,255,255,.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30rpx;
+  color: #fff;
+  font-weight: 700;
+}
+.result-slot.filled {
+  background: rgba(255,255,255,.9);
+  border-style: solid;
+  color: #1D4ED8;
+}
+
+/* ── 棋盘 ── */
+.board-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8rpx;
+}
+.board {
+  display: grid;
+  gap: 6rpx;
+}
+.cell {
+  border-radius: 12rpx;
+  background: rgba(255,255,255,.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #1E293B;
+  border: 2rpx solid rgba(255,255,255,.6);
+  transition: transform 0.1s;
+}
+.cell:active { transform: scale(0.88); }
+.cell-correct {
+  background: #D1FAE5;
+  border-color: #34D399;
+  color: #065F46;
+  opacity: 0;  /* 消除后隐藏 */
+}
+.cell-wrong {
+  background: #FEE2E2;
+  border-color: #F87171;
+  color: #991B1B;
+}
+.cell-wrong-lock {
+  background: #FEE2E2;
+  border-color: #F87171;
+  color: #991B1B;
+  opacity: 0.5;
+}
+.cell-empty { background: transparent; border: none; }
+.cell-hint {
+  background: #FEF9C3 !important;
+  border-color: #F59E0B !important;
+  color: #92400E !important;
+}
+
+/* ── 弹窗 ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.overlay.show { display: flex; }
+.dialog {
+  background: #fff;
+  border-radius: 32rpx;
+  padding: 48rpx 40rpx 36rpx;
+  width: 600rpx;
+  text-align: center;
+  box-shadow: 0 20rpx 60rpx rgba(0,0,0,.18);
+}
+.dialog-icon { font-size: 80rpx; margin-bottom: 8rpx; }
+.dialog-title { font-size: 44rpx; font-weight: 800; color: #1E293B; margin-bottom: 8rpx; }
+.dialog-stars { font-size: 48rpx; color: #F59E0B; margin-bottom: 8rpx; }
+.dialog-sub { font-size: 26rpx; color: #64748B; margin-bottom: 8rpx; }
+.dialog-answers {
+  font-size: 24rpx;
+  color: #475569;
+  text-align: left;
+  background: #F8FAFC;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  margin-bottom: 16rpx;
+  white-space: pre-wrap;
+}
+.dialog-btns { display: flex; gap: 16rpx; justify-content: center; }
+.ov-btn {
+  flex: 1;
+  padding: 22rpx 0;
+  border-radius: 20rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  text-align: center;
+}
+.ov-btn:active { opacity: 0.8; }
+.ov-btn.primary { background: #3B82F6; color: #fff; }
+.ov-btn.secondary { background: #E2E8F0; color: #475569; }
+.ov-btn.hidden { display: none; }

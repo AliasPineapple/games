@@ -1,0 +1,22 @@
+<!-- pages/menu/menu.wxml -->
+<view class="container">
+  <view class="logo">汉字</view>
+  <view class="title">偏旁消消乐</view>
+  <view class="sub">找出含有该偏旁的字根，消除它！</view>
+
+  <view class="level-grid">
+    <view
+      class="level-btn"
+      wx:for="{{levels}}"
+      wx:key="id"
+      bindtap="onLevelTap"
+      data-idx="{{index}}"
+    >
+      <view class="lnum">第 {{item.id}} 关</view>
+      <view class="lrad" style="color:{{item.accent}};background:{{item.bg}}">{{item.radical}}</view>
+      <view class="lname">{{item.radName}}</view>
+      <view class="ldiff">{{item.diff}}</view>
+      <view class="lstars">{{item.starText}}</view>
+    </view>
+  </view>
+</view>

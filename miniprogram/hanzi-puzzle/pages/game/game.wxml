@@ -1,0 +1,85 @@
+<!-- pages/game/game.wxml -->
+<view class="screen" style="background:{{bgGrad}}">
+
+  <!-- 顶栏 -->
+  <view class="header">
+    <view class="btn-back" bindtap="goMenu">← 返回</view>
+    <view class="level-label">第 {{levelId}} 关 · {{diffText}}</view>
+    <view class="btn-hint {{hintsLeft<=0 ? 'disabled' : ''}}" bindtap="useHint">
+      💡 <text class="hint-count">×{{hintsLeft}}</text>
+    </view>
+  </view>
+
+  <!-- 信息栏：偏旁徽章 + 计时条 + 找到N/M -->
+  <view class="info-bar">
+    <view class="radical-badge" style="background:{{radicalBg}}">
+      <text class="radical-char">{{radical}}</text>
+      <text class="radical-name">{{radName}}</text>
+    </view>
+    <view class="timer-wrap">
+      <view class="timer-bar-bg">
+        <view class="timer-bar" style="width:{{timerPct}}%;background:{{timerColor}}"></view>
+      </view>
+      <text class="timer-text">{{timerText}}</text>
+    </view>
+    <view class="found-label">{{foundCount}}/{{target}}</view>
+  </view>
+
+  <!-- 结果槽 -->
+  <view class="result-row">
+    <view
+      class="result-slot {{item.filled ? 'filled' : ''}}"
+      wx:for="{{resultSlots}}"
+      wx:key="index"
+      style="border-color:{{radicalBg}}"
+    >
+      <text>{{item.hanzi}}</text>
+    </view>
+  </view>
+
+  <!-- 棋盘 -->
+  <view class="board-wrap">
+    <view
+      class="board"
+      style="grid-template-columns:repeat({{cols}},{{cellSize}}rpx);grid-template-rows:repeat({{cols}},{{cellSize}}rpx)"
+    >
+      <view
+        wx:for="{{cells}}"
+        wx:key="key"
+        class="cell {{item.cls}}"
+        style="{{item.style}}"
+        bindtap="onCellTap"
+        data-key="{{item.key}}"
+      >{{item.char}}</view>
+    </view>
+  </view>
+
+  <!-- 通关弹窗 -->
+  <view class="overlay {{showWin ? 'show' : ''}}">
+    <view class="dialog">
+      <view class="dialog-icon">🎉</view>
+      <view class="dialog-title">太棒了！</view>
+      <view class="dialog-stars">{{winStars}}</view>
+      <view class="dialog-sub">{{winSub}}</view>
+      <view class="dialog-btns">
+        <view class="ov-btn secondary" bindtap="goMenu">关卡选择</view>
+        <view class="ov-btn primary {{hasNext ? '' : 'hidden'}}" bindtap="nextLevel">下一关 →</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 失败弹窗 -->
+  <view class="overlay {{showFail ? 'show' : ''}}">
+    <view class="dialog">
+      <view class="dialog-icon">😢</view>
+      <view class="dialog-title">时间到！</view>
+      <view class="dialog-sub">{{failSub}}</view>
+      <view class="dialog-answers">{{failAnswers}}</view>
+      <view class="dialog-btns">
+        <view class="ov-btn secondary" bindtap="goMenu">关卡选择</view>
+        <view class="ov-btn primary" bindtap="retryLevel">再来一次</view>
+      </view>
+    </view>
+  </view>
+
+</view>
